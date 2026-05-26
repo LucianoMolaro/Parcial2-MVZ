@@ -1,9 +1,6 @@
 from typing import TYPE_CHECKING, Optional
 from sqlmodel import Field, Relationship, SQLModel
 
-if TYPE_CHECKING:
-    from app.modules.Ingrediente.model import Ingrediente
-    from app.modules.Producto.model import Producto
 
 
 class ProductoIngrediente(SQLModel, table=True):

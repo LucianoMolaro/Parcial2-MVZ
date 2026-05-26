@@ -4,17 +4,14 @@ from passlib.context import CryptContext
 
 from app.core.Config import settings
 
-
 pwd_context = CryptContext(schemes=["bcrypt"], bcrypt__rounds=12, deprecated="auto")
 
 
 def hash_password(plain: str) -> str:
     return pwd_context.hash(plain)
 
-
 def verify_password(plain: str, hashed: str) -> bool:
     return pwd_context.verify(plain, hashed)
-
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
     to_encode = data.copy()
@@ -23,7 +20,6 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     )
     to_encode.update({"type": "access", "exp": expire})
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-
 
 def decode_access_token(token: str) -> dict | None:
     try:

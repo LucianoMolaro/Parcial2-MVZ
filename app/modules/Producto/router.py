@@ -8,7 +8,7 @@ from app.modules.Producto.schema import ProductoCreate, ProductoDisponibilidadUp
 from app.modules.Producto import service as producto_service
 
 router = APIRouter(prefix="/productos", tags=["Productos"])
-SD = Annotated[Session, Depends(get_session)]
+
 
 @router.get("/", response_model=List[ProductoRead])
 def listar_productos(
@@ -17,7 +17,7 @@ def listar_productos(
     categoria_id: Optional[int] = None,
     solo_disponibles: bool = False,
     offset: int = 0,
-    limit: Annotated[int, Query(le=100)] = 10,
+    limit: Annotated[int, Query(le=100)] = 7,
     _=Depends(get_current_active_user),
 ):
     return producto_service.get_all(session, nombre, categoria_id, solo_disponibles, offset, limit)
@@ -26,17 +26,17 @@ def listar_productos(
 @router.get("/{producto_id}", response_model=ProductoRead)
 def obtener_producto(
     producto_id: int,
-    session: SD,
+    session: Session = Depends(get_session),
     _=Depends(get_current_active_user),
 ):
-    return producto_service.get_by_id(SD, producto_id)
+    return producto_service.get_by_id(session, producto_id)
 
 
 @router.post("/", response_model=ProductoRead, status_code=201)
 def crear_producto(
     datos: ProductoCreate,
-    session: SD,
-    _=Depends(require_role(["ADMIN"])),
+    session: Session = Depends(get_session),
+    _=Depends(require_role(["ADMIN", "STOCK"])),
 ):
     return producto_service.create(session, datos)
 
@@ -45,8 +45,8 @@ def crear_producto(
 def editar_producto(
     producto_id: int,
     datos: ProductoCreate,
-    session: SD,
-    _=Depends(require_role(["ADMIN"])),
+    session: Session = Depends(get_session),
+    _=Depends(require_role(["ADMIN", "STOCK"])),
 ):
     return producto_service.update(session, producto_id, datos)
 
@@ -55,16 +55,25 @@ def editar_producto(
 def actualizar_disponibilidad(
     producto_id: int,
     datos: ProductoDisponibilidadUpdate,
-    session: SD,
+    session: Session = Depends(get_session),
     _=Depends(require_role(["ADMIN", "STOCK"])),
 ):
     return producto_service.update_disponibilidad(session, producto_id, datos)
 
 
+@router.patch("/{producto_id}/reactivar", response_model=ProductoRead)
+def reactivar_producto(
+    producto_id: int,
+    session: Session = Depends(get_session),
+    _=Depends(require_role(["ADMIN", "STOCK"])),
+):
+    return producto_service.reactivar(session, producto_id)
+
+
 @router.delete("/{producto_id}", status_code=204)
 def eliminar_producto(
     producto_id: int,
-    session: SD,
-    _=Depends(require_role(["ADMIN"])),
+    session: Session = Depends(get_session),
+    _=Depends(require_role(["ADMIN", "STOCK"])),
 ):
     producto_service.delete(session, producto_id)

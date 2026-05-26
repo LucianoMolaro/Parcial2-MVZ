@@ -1,11 +1,10 @@
 from decimal import Decimal
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
     from app.modules.Pedido.model import Pedido
     from app.modules.Usuario.model import Usuario
-
 
 class DireccionEntrega(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -22,4 +21,4 @@ class DireccionEntrega(SQLModel, table=True):
     deleted: bool = Field(default=False)
 
     usuario: Optional["Usuario"] = Relationship(back_populates="direcciones")
-    pedidos: List["Pedido"] = Relationship(back_populates="direccion_entrega")
+    pedidos: list["Pedido"] = Relationship(back_populates="direccion_entrega")

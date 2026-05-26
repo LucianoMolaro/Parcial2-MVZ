@@ -12,7 +12,6 @@ from app.modules.ProductoIngrediente.model import ProductoIngrediente
 
 
 def _cargar(session: Session, producto: Producto) -> dict:
-    """Carga relaciones y devuelve dict listo para el schema."""
     _ = producto.categorias
     _ = producto.ingrediente_links
     for link in producto.ingrediente_links:
@@ -122,6 +121,16 @@ def update_disponibilidad(session: Session, producto_id: int, data: ProductoDisp
             raise HTTPException(status_code=404, detail="Producto no encontrado")
         producto.stock_cantidad = data.stock_cantidad
         producto.disponible = data.disponible
+        uow._session.flush()
+        return _cargar(uow._session, producto)
+
+
+def reactivar(session: Session, producto_id: int) -> dict:
+    with UnitOfWork(session) as uow:
+        producto = uow._session.get(Producto, producto_id)
+        if not producto:
+            raise HTTPException(status_code=404, detail="Producto no encontrado")
+        producto.deleted = False
         uow._session.flush()
         return _cargar(uow._session, producto)
 

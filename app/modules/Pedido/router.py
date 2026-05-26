@@ -22,7 +22,7 @@ def _get_roles(session: Session, usuario_id: int) -> list[str]:
 def listar_pedidos(
     session: Session = Depends(get_session),
     offset: int = 0,
-    limit: Annotated[int, Query(le=100)] = 10,
+    limit: Annotated[int, Query(le=100)] = 7,
     current_user: Usuario = Depends(get_current_active_user),
 ):
     roles = _get_roles(session, current_user.id)

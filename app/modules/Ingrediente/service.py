@@ -7,10 +7,12 @@ from app.modules.Ingrediente.model import Ingrediente
 from app.modules.Ingrediente.schema import IngredienteCreate
 
 
-def get_all(session: Session, nombre: Optional[str], offset: int, limit: int) -> List[Ingrediente]:
+def get_all(session: Session, nombre: Optional[str], es_alergeno: Optional[bool], offset: int, limit: int) -> List[Ingrediente]:
     query = select(Ingrediente)
     if nombre:
         query = query.where(Ingrediente.nombre.contains(nombre))
+    if es_alergeno is not None:
+        query = query.where(Ingrediente.es_alergeno == es_alergeno)
     return session.exec(query.offset(offset).limit(limit)).all()
 
 
@@ -23,7 +25,12 @@ def get_by_id(session: Session, ingrediente_id: int) -> Ingrediente:
 
 def create(session: Session, data: IngredienteCreate) -> Ingrediente:
     with UnitOfWork(session) as uow:
-        nuevo = Ingrediente(nombre=data.nombre, unidad=data.unidad, es_alergeno=data.es_alergeno)
+        nuevo = Ingrediente(
+            nombre=data.nombre,
+            unidad=data.unidad,
+            es_alergeno=data.es_alergeno,
+            stock_cantidad=data.stock_cantidad,
+        )
         uow._session.add(nuevo)
         uow._session.flush()
         return nuevo
@@ -37,6 +44,7 @@ def update(session: Session, ingrediente_id: int, data: IngredienteCreate) -> In
         ingrediente.nombre = data.nombre
         ingrediente.unidad = data.unidad
         ingrediente.es_alergeno = data.es_alergeno
+        ingrediente.stock_cantidad = data.stock_cantidad
         uow._session.flush()
         return ingrediente
 

@@ -1,10 +1,9 @@
 from typing import TYPE_CHECKING, List, Optional
 from sqlmodel import Field, Relationship, SQLModel
 
-if TYPE_CHECKING:
-    from app.modules.DireccionEntrega.model import DireccionEntrega
-    from app.modules.Pedido.model import Pedido
-    from app.modules.UsuarioRol.model import UsuarioRol
+from app.modules.DireccionEntrega.model import DireccionEntrega
+from app.modules.Rol.model import Rol
+from app.modules.UsuarioRol.model import UsuarioRol
 
 
 class Usuario(SQLModel, table=True):
@@ -17,6 +16,6 @@ class Usuario(SQLModel, table=True):
     password: str = Field(max_length=60)
     deleted: bool = Field(default=False)
 
-    usuario_roles: List["UsuarioRol"] = Relationship(back_populates="usuario")
+    roles: List["Rol"] = Relationship(back_populates="usuarios", link_model=UsuarioRol)
     direcciones: List["DireccionEntrega"] = Relationship(back_populates="usuario")
     pedidos: List["Pedido"] = Relationship(back_populates="usuario")

@@ -1,61 +1,44 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Navbar from "./components/Navbar";
-
 import LoginPage from "./pages/LoginPage";
-import HomePage from "./pages/HomePage";
 import CategoriasPage from "./pages/CategoriasPage";
 import IngredientesPage from "./pages/IngredientesPage";
 import ProductosPage from "./pages/ProductosPage";
-import ProductoDetallePage from "./pages/ProductoDetallePage";
+import PedidosPage from "./pages/PedidosPage";
+import ClientePage from "./pages/ClientePage";
 
 const queryClient = new QueryClient();
 
-// 🔐 función simple para saber si está logueado
-const isAuthenticated = () => {
-  return !!localStorage.getItem("token");
-};
+function getRole() { return localStorage.getItem("rol") ?? ""; }
+function isLoggedIn() { return !!localStorage.getItem("rol"); }
+
+function defaultPage(rol: string) {
+  if (rol === "CLIENT") return "/catalogo";
+  if (rol === "ADMIN" || rol === "PEDIDOS") return "/pedidos";
+  if (rol === "STOCK") return "/productos";
+  return "/catalogo";
+}
 
 export default function App() {
+  const rol = getRole();
+  const loggedIn = isLoggedIn();
+
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-
-        {/* 👇 opcional: ocultar navbar si no está logueado */}
-        {isAuthenticated() && <Navbar />}
-
+        {loggedIn && <Navbar />}
         <Routes>
-          {/* 🔐 login */}
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/" element={loggedIn ? <Navigate to={defaultPage(rol)} /> : <Navigate to="/login" />} />
 
-          {/* 👇 redirige root */}
-          <Route
-            path="/"
-            element={
-              isAuthenticated() ? <HomePage /> : <Navigate to="/login" />
-            }
-          />
+          <Route path="/catalogo" element={loggedIn ? <ClientePage /> : <Navigate to="/login" />} />
 
-          {/* 🔒 rutas protegidas */}
-          <Route
-            path="/categorias"
-            element={isAuthenticated() ? <CategoriasPage /> : <Navigate to="/login" />}
-          />
-
-          <Route
-            path="/ingredientes"
-            element={isAuthenticated() ? <IngredientesPage /> : <Navigate to="/login" />}
-          />
-
-          <Route
-            path="/productos"
-            element={isAuthenticated() ? <ProductosPage /> : <Navigate to="/login" />}
-          />
-
-          <Route
-            path="/productos/:id"
-            element={isAuthenticated() ? <ProductoDetallePage /> : <Navigate to="/login" />}
-          />
+          <Route path="/pedidos" element={loggedIn && (rol === "ADMIN" || rol === "PEDIDOS") ? <PedidosPage /> : <Navigate to="/login" />} />
+          <Route path="/ingredientes" element={loggedIn && (rol === "ADMIN" || rol === "STOCK") ? <IngredientesPage /> : <Navigate to="/login" />} />
+          <Route path="/productos" element={loggedIn && (rol === "ADMIN" || rol === "STOCK") ? <ProductosPage /> : <Navigate to="/login" />} />
+          <Route path="/categorias" element={loggedIn && rol === "ADMIN" ? <CategoriasPage /> : <Navigate to="/login" />} />
+          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>

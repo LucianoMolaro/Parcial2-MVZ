@@ -28,6 +28,7 @@ class Categoria(SQLModel, table=True):
             "remote_side": "[Categoria.id]",
         },
     )
+    
     productos: List["Producto"] = Relationship(
         back_populates="categorias", link_model=ProductoCategoria
     )

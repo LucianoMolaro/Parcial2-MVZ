@@ -2,10 +2,25 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-import app.core.models
+# import app.core.models
+from app.modules.Pedido.model import Pedido
+from app.modules.DireccionEntrega.model import DireccionEntrega
+from app.modules.Categoria.model import Categoria
+from app.modules.Producto.model import Producto
+from app.modules.EstadoPedido.model import EstadoPedido
+from app.modules.DetallePedido.model import DetallePedido
+from app.modules.FormaPago.model import FormaPago
+from app.modules.Usuario.model import Usuario
+from app.modules.UsuarioRol.model import UsuarioRol
+from app.modules.Rol.model import Rol
+from app.modules.ProductoIngrediente.model import ProductoIngrediente
+from app.modules.Ingrediente.model import Ingrediente
+from app.modules.HistorialDetallePedido.model import HistorialDetallePedido
+
 
 from app.core.Database import create_db_and_tables
 from app.core.Seed import seed
+
 from app.modules.Auth.router import router as auth_router
 from app.modules.Categoria.router import router as categoria_router
 from app.modules.Ingrediente.router import router as ingrediente_router
@@ -19,7 +34,7 @@ from app.modules.FormaPago.router import router as forma_pago_router
 from app.modules.Pedido.router import router as pedido_router
 from app.modules.DetallePedido.router import router as detalle_router
 from app.modules.HistorialDetallePedido.router import router as historial_router
-from app.modules.Admin.router import router as admin_router
+# from app.modules.Admin.router import router as admin_router
 
 
 @asynccontextmanager
@@ -44,20 +59,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth_router,         prefix="/api/v1")
-app.include_router(categoria_router,    prefix="/api/v1")
-app.include_router(ingrediente_router,  prefix="/api/v1")
-app.include_router(producto_router,     prefix="/api/v1")
-app.include_router(usuario_router,      prefix="/api/v1")
-app.include_router(rol_router,          prefix="/api/v1")
-app.include_router(usuariorol_router,   prefix="/api/v1")
-app.include_router(direccion_router,    prefix="/api/v1")
-app.include_router(estado_pedido_router,prefix="/api/v1")
-app.include_router(forma_pago_router,   prefix="/api/v1")
-app.include_router(pedido_router,       prefix="/api/v1")
-app.include_router(detalle_router,      prefix="/api/v1")
-app.include_router(historial_router,    prefix="/api/v1")
-app.include_router(admin_router,        prefix="/api/v1")
+app.include_router(auth_router)
+app.include_router(categoria_router)
+app.include_router(ingrediente_router)
+app.include_router(producto_router)
+app.include_router(usuario_router)
+app.include_router(rol_router)
+app.include_router(usuariorol_router)
+app.include_router(direccion_router)
+app.include_router(estado_pedido_router)
+app.include_router(forma_pago_router)
+app.include_router(pedido_router)
+app.include_router(detalle_router)
+app.include_router(historial_router)
+
 
 
 @app.get("/")

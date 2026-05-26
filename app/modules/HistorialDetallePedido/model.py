@@ -2,9 +2,8 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 from sqlmodel import Field, Relationship, SQLModel
 
-if TYPE_CHECKING:
-    from app.modules.EstadoPedido.model import EstadoPedido
-    from app.modules.Pedido.model import Pedido
+from app.modules.EstadoPedido.model import EstadoPedido
+from app.modules.Pedido.model import Pedido
 
 
 class HistorialDetallePedido(SQLModel, table=True):

@@ -10,10 +10,10 @@ from app.modules.UsuarioRol.model import UsuarioRol
 
 
 ROLES = [
-    Rol(codigo="ADMIN",   nombre="Administrador",    descripcion="CRUD completo de todo el sistema"),
-    Rol(codigo="STOCK",   nombre="Gestor de Stock",  descripcion="Actualiza stock y disponibilidad"),
-    Rol(codigo="PEDIDOS", nombre="Gestor de Pedidos",descripcion="Ve y avanza estados de pedidos"),
-    Rol(codigo="CLIENT",  nombre="Cliente",           descripcion="Catálogo, carrito y pedidos propios"),
+    Rol(codigo="ADMIN",   nombre="Administrador", descripcion="CRUD completo de todo el sistema"),
+    Rol(codigo="STOCK",   nombre="Gestor de Stock", descripcion="Actualiza stock y disponibilidad"),
+    Rol(codigo="PEDIDOS", nombre="Gestor de Pedidos", descripcion="Ve y avanza estados de pedidos"),
+    Rol(codigo="CLIENT",  nombre="Cliente", descripcion="Catálogo, carrito y pedidos propios"),
 ]
 
 ESTADOS_PEDIDO = [

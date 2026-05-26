@@ -9,7 +9,7 @@ from app.core.Security import decode_access_token
 from app.modules.Usuario.model import Usuario
 from app.modules.UsuarioRol.model import UsuarioRol
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token", auto_error=False)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token", auto_error=False)
 
 
 async def get_current_user(
@@ -30,12 +30,12 @@ async def get_current_user(
     payload = decode_access_token(token)
     if payload is None:
         raise credentials_exception
-
-    email: str | None = payload.get("sub")
-    if not email:
+    
+    username: str | None = payload.get("sub")
+    if username is None:
         raise credentials_exception
 
-    user = session.exec(select(Usuario).where(Usuario.email == email)).first()
+    user = session.exec(select(Usuario).where(Usuario.username == username)).first()
     if user is None:
         raise credentials_exception
     return user
@@ -44,7 +44,7 @@ async def get_current_user(
 async def get_current_active_user(
     current_user: Annotated[Usuario, Depends(get_current_user)],
 ) -> Usuario:
-    if not current_user.habilitado:
+    if current_user.deleted:
         raise HTTPException(
             status_code=400, 
             detail="Cuenta de usuario desactivada")
