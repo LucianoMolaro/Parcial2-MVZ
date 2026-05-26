@@ -1,4 +1,4 @@
-# Parcial 1 - Programación IV
+# Parcial 2 - Programación IV
 
 Aplicación Fullstack con **FastAPI + React** para la gestión de productos, categorías e ingredientes.
 
