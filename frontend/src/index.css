@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@font-face {
+  font-family: 'iconsOne';
+  src: url('./assets/fonts/genericons.regular.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Maxwell';
+  src: url('./assets/fonts/MAXWELL-BOLD.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Maxwell';
+  src: url('./assets/fonts/MAXWELL-LIGHT.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Maxwell';
+  src: url('./assets/fonts/MAXWELL-REGULAR.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'iconsTwo';
+  src: url('./assets/fonts/icon-works.regular.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
