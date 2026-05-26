@@ -34,7 +34,7 @@ uvicorn main:app --reload
 
 La API queda en: http://localhost:8000  
 Documentación automática: http://localhost:8000/docs  
-> La base de datos SQLite (`parcial1.db`) se crea sola al iniciar.
+> La base de datos SQLite (`Integrador.db`) se crea sola al iniciar.
 
 ### Frontend
 
