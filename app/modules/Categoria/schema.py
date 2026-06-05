@@ -9,7 +9,6 @@ class CategoriaCreate(SQLModel):
 
 
 class CategoriaRead(SQLModel):
-    id: int
     nombre: str
     descripcion: Optional[str] = None
     parent_id: Optional[int] = None

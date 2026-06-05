@@ -12,7 +12,7 @@ class Categoria(SQLModel, table=True):
     nombre: str = Field(index=True)
     descripcion: Optional[str] = None
     parent_id: Optional[int] = Field(default=None, foreign_key="categoria.id")
-    deleted: bool = Field(default=False)
+    habilitado: bool = Field(default=True)
 
     subcategorias: List["Categoria"] = Relationship(
         back_populates="parent",
