@@ -18,13 +18,11 @@ class DireccionCreate(SQLModel):
 
 class DireccionRead(SQLModel):
     id: int
-    usuario_id: int
     alias: Optional[str] = None
     calle1: str
     calle2: Optional[str] = None
     ciudad: str
     provincia: Optional[str] = None
     codigo_postal: Optional[str] = None
-    latitud: Optional[Decimal] = None
-    longitud: Optional[Decimal] = None
-    es_principal: bool
+    es_principal: bool = False
+    

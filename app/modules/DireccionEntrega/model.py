@@ -18,7 +18,7 @@ class DireccionEntrega(SQLModel, table=True):
     latitud: Optional[Decimal] = Field(default=None, max_digits=9, decimal_places=6)
     longitud: Optional[Decimal] = Field(default=None, max_digits=9, decimal_places=6)
     es_principal: bool = Field(default=False)
-    deleted: bool = Field(default=False)
+    habilitado: bool = Field(default=True)
 
     usuario: Optional["Usuario"] = Relationship(back_populates="direcciones")
     pedidos: list["Pedido"] = Relationship(back_populates="direccion_entrega")

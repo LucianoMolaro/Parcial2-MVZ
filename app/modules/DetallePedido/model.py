@@ -8,9 +8,10 @@ if TYPE_CHECKING:
 
 
 class DetallePedido(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    pedido_id: int = Field(foreign_key="pedido.id")
-    producto_id: int = Field(foreign_key="producto.id")
+
+    pedido_id: int = Field(foreign_key="pedido.id", primary_key=True)
+    producto_id: int = Field(foreign_key="producto.id", primary_key=True)
+
     cantidad: int
     nombre: str = Field(max_length=200)
     precio: Decimal = Field(max_digits=10, decimal_places=2)
