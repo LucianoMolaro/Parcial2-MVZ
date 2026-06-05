@@ -1,6 +1,6 @@
 from typing import List, Optional
 from fastapi import HTTPException
-from sqlmodel import Session, select
+from sqlmodel import select
 
 from app.core.UnitOfWork import UnitOfWork
 from app.modules.Categoria.model import Categoria
@@ -8,18 +8,18 @@ from app.modules.Categoria.schema import CategoriaCreate, CategoriaTree
 from app.modules.ProductoCategoria.model import ProductoCategoria
 
 
-def get_all(session: Session, nombre: Optional[str], parent_id: Optional[int],
+def get_all(uow: UnitOfWork, nombre: Optional[str], parent_id: Optional[int],
             offset: int, limit: int) -> List[Categoria]:
-    query = select(Categoria).where(Categoria.deleted == False)
+    query = select(Categoria).where(Categoria.habilitado == True)
     if nombre:
         query = query.where(Categoria.nombre.contains(nombre))
     if parent_id is not None:
         query = query.where(Categoria.parent_id == parent_id)
-    return session.exec(query.offset(offset).limit(limit)).all()
+    return uow._session.exec(query.offset(offset).limit(limit)).all()
 
 
-def get_tree(session: Session) -> List[CategoriaTree]:
-    all_cats = session.exec(select(Categoria).where(Categoria.deleted == False)).all()
+def get_tree(uow: UnitOfWork) -> List[CategoriaTree]:
+    all_cats = uow._session.exec(select(Categoria).where(Categoria.habilitado == True)).all()
     by_id = {
         c.id: CategoriaTree(id=c.id, nombre=c.nombre, descripcion=c.descripcion, parent_id=c.parent_id, subcategorias=[])
         for c in all_cats
@@ -33,15 +33,15 @@ def get_tree(session: Session) -> List[CategoriaTree]:
     return roots
 
 
-def get_by_id(session: Session, categoria_id: int) -> Categoria:
-    c = session.get(Categoria, categoria_id)
-    if not c or c.deleted:
+def get_by_id(uow: UnitOfWork, categoria_id: int) -> Categoria:
+    c = uow._session.get(Categoria, categoria_id)
+    if not c or not c.habilitado:
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
     return c
 
 
-def create(session: Session, data: CategoriaCreate) -> Categoria:
-    with UnitOfWork(session) as uow:
+def create(uow: UnitOfWork, data: CategoriaCreate) -> Categoria:
+    with uow:
         if data.parent_id and not uow._session.get(Categoria, data.parent_id):
             raise HTTPException(status_code=404, detail="Categoría padre no encontrada")
         nueva = Categoria(nombre=data.nombre, descripcion=data.descripcion, parent_id=data.parent_id)
@@ -50,10 +50,10 @@ def create(session: Session, data: CategoriaCreate) -> Categoria:
         return nueva
 
 
-def update(session: Session, categoria_id: int, data: CategoriaCreate) -> Categoria:
-    with UnitOfWork(session) as uow:
+def update(uow: UnitOfWork, categoria_id: int, data: CategoriaCreate) -> Categoria:
+    with uow:
         c = uow._session.get(Categoria, categoria_id)
-        if not c or c.deleted:
+        if not c or not c.habilitado:
             raise HTTPException(status_code=404, detail="Categoría no encontrada")
         c.nombre = data.nombre
         c.descripcion = data.descripcion
@@ -62,20 +62,20 @@ def update(session: Session, categoria_id: int, data: CategoriaCreate) -> Catego
         return c
 
 
-def reactivar(session: Session, categoria_id: int) -> Categoria:
-    with UnitOfWork(session) as uow:
+def reactivar(uow: UnitOfWork, categoria_id: int) -> Categoria:
+    with uow:
         c = uow._session.get(Categoria, categoria_id)
         if not c:
             raise HTTPException(status_code=404, detail="Categoría no encontrada")
-        c.deleted = False
+        c.habilitado = True
         uow._session.flush()
         return c
 
 
-def delete(session: Session, categoria_id: int) -> None:
-    with UnitOfWork(session) as uow:
+def delete(uow: UnitOfWork, categoria_id: int) -> None:
+    with uow:
         c = uow._session.get(Categoria, categoria_id)
-        if not c or c.deleted:
+        if not c or not c.habilitado:
             raise HTTPException(status_code=404, detail="Categoría no encontrada")
         tiene_productos = uow._session.exec(
             select(ProductoCategoria).where(ProductoCategoria.categoria_id == categoria_id)
@@ -85,5 +85,5 @@ def delete(session: Session, categoria_id: int) -> None:
                 status_code=409,
                 detail="No se puede eliminar una categoría con productos activos",
             )
-        c.deleted = True
+        c.habilitado = False
         uow._session.flush()
