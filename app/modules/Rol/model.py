@@ -3,6 +3,7 @@ from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
     from app.modules.Usuario.model import Usuario
+
 from app.modules.UsuarioRol.model import UsuarioRol
 
 
@@ -11,4 +12,4 @@ class Rol(SQLModel, table=True):
     nombre: str = Field(max_length=50, unique=True)
     descripcion: Optional[str] = None
 
-    usuarios: List["Usuario"] = Relationship(back_populates="roles", link_model=UsuarioRol)
+    usuarios: list["Usuario"] = Relationship(back_populates="roles", link_model=UsuarioRol)

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 from sqlmodel import Field, Relationship, SQLModel
 
 from app.modules.ProductoCategoria.model import ProductoCategoria
@@ -18,8 +18,8 @@ class Producto(SQLModel, table=True):
     stock_cantidad: int = Field(default=0)
     deleted: bool = Field(default=False)
 
-    categorias: List["Categoria"] = Relationship(
+    categorias: list["Categoria"] = Relationship(
         back_populates="productos", link_model=ProductoCategoria
     )
-    ingrediente_links: List["ProductoIngrediente"] = Relationship(back_populates="producto")
-    detalles: List["DetallePedido"] = Relationship(back_populates="producto")
+    ingrediente_links: list["ProductoIngrediente"] = Relationship(back_populates="producto")
+    detalles: list["DetallePedido"] = Relationship(back_populates="producto")

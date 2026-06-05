@@ -5,7 +5,7 @@ from passlib.context import CryptContext
 from app.core.Config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], bcrypt__rounds=12, deprecated="auto")
-
+ACCESS_TOKEN_MINUTES = 30
 
 def hash_password(plain: str) -> str:
     return pwd_context.hash(plain)
@@ -29,3 +29,6 @@ def decode_access_token(token: str) -> dict | None:
         return payload
     except JWTError:
         return None
+
+def get_acces_token_minutes():
+     return ACCESS_TOKEN_MINUTES 

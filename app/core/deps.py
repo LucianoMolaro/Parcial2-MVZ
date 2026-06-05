@@ -6,17 +6,22 @@ from sqlmodel import Session, select
 
 from app.core.Database import get_session
 from app.core.Security import decode_access_token
+from app.core.UnitOfWork import UnitOfWork
+from app.modules.Usuario import service as usuarioService
 from app.modules.Usuario.model import Usuario
 from app.modules.UsuarioRol.model import UsuarioRol
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token", auto_error=False)
 
+def get_uow(session: Session = Depends(get_session)) -> UnitOfWork:
+    return UnitOfWork(session)
+
 
 async def get_current_user(
-    request: Request,
-    token_header: Optional[str] = Depends(oauth2_scheme),
-    session: Session = Depends(get_session),
-) -> Usuario:
+        request: Request,
+        token_header: Optional[str] = Depends(oauth2_scheme),
+        uow: UnitOfWork = Depends(get_uow),
+    ) -> Usuario:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Credenciales inválidas o token expirado",
@@ -35,16 +40,15 @@ async def get_current_user(
     if username is None:
         raise credentials_exception
 
-    user = session.exec(select(Usuario).where(Usuario.username == username)).first()
+    user = uow.usuarios.get_by_username(username)
     if user is None:
         raise credentials_exception
+    
     return user
 
 
-async def get_current_active_user(
-    current_user: Annotated[Usuario, Depends(get_current_user)],
-) -> Usuario:
-    if current_user.deleted:
+async def get_current_active_user(current_user: Annotated[Usuario, Depends(get_current_user)]) -> Usuario:
+    if not current_user.habilitado:
         raise HTTPException(
             status_code=400, 
             detail="Cuenta de usuario desactivada")
@@ -54,11 +58,9 @@ async def get_current_active_user(
 def require_role(allowed_roles: list[str]):
     async def role_checker(
         current_user: Annotated[Usuario, Depends(get_current_active_user)],
-        session: Session = Depends(get_session),
-    ) -> Usuario:
-        roles = session.exec(
-            select(UsuarioRol.rol_codigo).where(UsuarioRol.usuario_id == current_user.id)
-        ).all()
+        uow: UnitOfWork = Depends(get_uow)
+        ) -> Usuario:
+        roles = uow.usuarios.get_codigos_roles(current_user.id)
         if not any(r in allowed_roles for r in roles):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -66,3 +68,4 @@ def require_role(allowed_roles: list[str]):
             )
         return current_user
     return role_checker
+
