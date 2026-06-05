@@ -10,7 +10,6 @@ class DetallePedidoCreate(SQLModel):
 
 
 class DetallePedidoRead(SQLModel):
-    id: int
     pedido_id: int
     producto_id: int
     cantidad: int
@@ -43,7 +42,7 @@ class PedidoRead(SQLModel):
     usuario_id: int
     forma_pago_codigo: str
     direccion_entrega_id: int
-    estado_pedido_codigo: str
+    estado_codigo: str
     subtotal: Decimal
     costo_envio: Decimal
     total: Decimal

@@ -10,7 +10,7 @@ class ProductoIngredienteRead(SQLModel):
     unidad: str
     es_alergeno: bool
     stock_cantidad: float
-    cantidad: float  # cantidad que usa este producto por unidad
+    cantidad: float 
 
 
 class ProductoCreate(SQLModel):

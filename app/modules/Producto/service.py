@@ -1,6 +1,6 @@
 from typing import List, Optional
 from fastapi import HTTPException
-from sqlmodel import Session, select
+from sqlmodel import select
 
 from app.core.UnitOfWork import UnitOfWork
 from app.modules.Producto.model import Producto
@@ -11,7 +11,7 @@ from app.modules.ProductoCategoria.model import ProductoCategoria
 from app.modules.ProductoIngrediente.model import ProductoIngrediente
 
 
-def _cargar(session: Session, producto: Producto) -> dict:
+def _cargar(uow: UnitOfWork, producto: Producto) -> dict:
     _ = producto.categorias
     _ = producto.ingrediente_links
     for link in producto.ingrediente_links:
@@ -39,7 +39,7 @@ def _cargar(session: Session, producto: Producto) -> dict:
     }
 
 
-def get_all(session: Session, nombre: Optional[str], categoria_id: Optional[int],
+def get_all(uow: UnitOfWork, nombre: Optional[str], categoria_id: Optional[int],
             solo_disponibles: bool, offset: int, limit: int) -> List[dict]:
     query = select(Producto).where(Producto.deleted == False)
     if nombre:
@@ -48,18 +48,18 @@ def get_all(session: Session, nombre: Optional[str], categoria_id: Optional[int]
         query = query.join(ProductoCategoria).where(ProductoCategoria.categoria_id == categoria_id)
     if solo_disponibles:
         query = query.where(Producto.disponible == True)
-    return [_cargar(session, p) for p in session.exec(query.offset(offset).limit(limit)).all()]
+    return [_cargar(uow, p) for p in uow._session.exec(query.offset(offset).limit(limit)).all()]
 
 
-def get_by_id(session: Session, producto_id: int) -> dict:
-    producto = session.get(Producto, producto_id)
+def get_by_id(uow: UnitOfWork, producto_id: int) -> dict:
+    producto = uow._session.get(Producto, producto_id)
     if not producto or producto.deleted:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
-    return _cargar(session, producto)
+    return _cargar(uow, producto)
 
 
-def create(session: Session, data: ProductoCreate) -> dict:
-    with UnitOfWork(session) as uow:
+def create(uow: UnitOfWork, data: ProductoCreate) -> dict:
+    with uow:
         producto = Producto(
             nombre=data.nombre, precio=data.precio, descripcion=data.descripcion,
             disponible=data.disponible, stock_cantidad=data.stock_cantidad,
@@ -81,11 +81,11 @@ def create(session: Session, data: ProductoCreate) -> dict:
                 cantidad=item.cantidad,
             ))
         uow._session.flush()
-        return _cargar(uow._session, producto)
+        return _cargar(uow, producto)
 
 
-def update(session: Session, producto_id: int, data: ProductoCreate) -> dict:
-    with UnitOfWork(session) as uow:
+def update(uow: UnitOfWork, producto_id: int, data: ProductoCreate) -> dict:
+    with uow:
         producto = uow._session.get(Producto, producto_id)
         if not producto or producto.deleted:
             raise HTTPException(status_code=404, detail="Producto no encontrado")
@@ -111,32 +111,32 @@ def update(session: Session, producto_id: int, data: ProductoCreate) -> dict:
                 cantidad=item.cantidad,
             ))
         uow._session.flush()
-        return _cargar(uow._session, producto)
+        return _cargar(uow, producto)
 
 
-def update_disponibilidad(session: Session, producto_id: int, data: ProductoDisponibilidadUpdate) -> dict:
-    with UnitOfWork(session) as uow:
+def update_disponibilidad(uow: UnitOfWork, producto_id: int, data: ProductoDisponibilidadUpdate) -> dict:
+    with uow:
         producto = uow._session.get(Producto, producto_id)
         if not producto or producto.deleted:
             raise HTTPException(status_code=404, detail="Producto no encontrado")
         producto.stock_cantidad = data.stock_cantidad
         producto.disponible = data.disponible
         uow._session.flush()
-        return _cargar(uow._session, producto)
+        return _cargar(uow, producto)
 
 
-def reactivar(session: Session, producto_id: int) -> dict:
-    with UnitOfWork(session) as uow:
+def reactivar(uow: UnitOfWork, producto_id: int) -> dict:
+    with uow:
         producto = uow._session.get(Producto, producto_id)
         if not producto:
             raise HTTPException(status_code=404, detail="Producto no encontrado")
         producto.deleted = False
         uow._session.flush()
-        return _cargar(uow._session, producto)
+        return _cargar(uow, producto)
 
 
-def delete(session: Session, producto_id: int) -> None:
-    with UnitOfWork(session) as uow:
+def delete(uow: UnitOfWork, producto_id: int) -> None:
+    with uow:
         producto = uow._session.get(Producto, producto_id)
         if not producto or producto.deleted:
             raise HTTPException(status_code=404, detail="Producto no encontrado")
