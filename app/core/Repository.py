@@ -1,8 +1,6 @@
 from typing import Generic, TypeVar, Optional, List, Type
 from sqlmodel import SQLModel, Session, select, update
 
-from app.modules.Usuario.repository import UsuarioRepository
-
 T = TypeVar("T", bound=SQLModel)
 
 

@@ -35,6 +35,13 @@ def logout(response: Response):
     return {"detail": "Sesión cerrada"}
 
 
+@router.post("/token", summary="Login OAuth2 (Swagger UI)")
+def token(form: OAuth2PasswordRequestForm = Depends(), uow: UnitOfWork=Depends(get_uow)):
+
+    jwt, user = authService.autenticar(form.username, form.password, uow)
+    return {"access_token": jwt, "token_type": "bearer"}
+
+
 @router.get("/me", response_model=UsuarioRead)
-def me(current_user: Annotated[Usuario, Depends(get_current_active_user())]):
+def me(current_user: Annotated[Usuario, Depends(get_current_active_user)]):
     return current_user
