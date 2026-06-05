@@ -2,10 +2,6 @@
 
 Aplicación Fullstack con **FastAPI + React** para la gestión de productos, categorías e ingredientes.
 
-## Video de presentación
-
-> [Link al video - agregar acá]
-
 ## Tecnologías
 
 - **Backend**: FastAPI, SQLModel, SQLite (sin configuración externa)
