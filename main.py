@@ -15,7 +15,7 @@ from app.modules.UsuarioRol.model import UsuarioRol
 from app.modules.Rol.model import Rol
 from app.modules.ProductoIngrediente.model import ProductoIngrediente
 from app.modules.Ingrediente.model import Ingrediente
-from app.modules.HistorialDetallePedido.model import HistorialDetallePedido
+# from app.modules.HistorialDetallePedido.model import HistorialDetallePedido
 
 
 from app.core.Database import create_db_and_tables
@@ -26,14 +26,14 @@ from app.modules.Categoria.router import router as categoria_router
 from app.modules.Ingrediente.router import router as ingrediente_router
 from app.modules.Producto.router import router as producto_router
 from app.modules.Usuario.router import router as usuario_router
-from app.modules.Rol.router import router as rol_router
-from app.modules.UsuarioRol.router import router as usuariorol_router
+# from app.modules.Rol.router import router as rol_router
+# from app.modules.UsuarioRol.router import router as usuariorol_router
 from app.modules.DireccionEntrega.router import router as direccion_router
-from app.modules.EstadoPedido.router import router as estado_pedido_router
-from app.modules.FormaPago.router import router as forma_pago_router
+# from app.modules.EstadoPedido.router import router as estado_pedido_router
+# from app.modules.FormaPago.router import router as forma_pago_router
 from app.modules.Pedido.router import router as pedido_router
-from app.modules.DetallePedido.router import router as detalle_router
-from app.modules.HistorialDetallePedido.router import router as historial_router
+# from app.modules.DetallePedido.router import router as detalle_router
+# from app.modules.HistorialDetallePedido.router import router as historial_router
 # from app.modules.Admin.router import router as admin_router
 
 
@@ -64,14 +64,14 @@ app.include_router(categoria_router)
 app.include_router(ingrediente_router)
 app.include_router(producto_router)
 app.include_router(usuario_router)
-app.include_router(rol_router)
-app.include_router(usuariorol_router)
+# app.include_router(rol_router)
+# app.include_router(usuariorol_router)
 app.include_router(direccion_router)
-app.include_router(estado_pedido_router)
-app.include_router(forma_pago_router)
+# app.include_router(estado_pedido_router)
+# app.include_router(forma_pago_router)
 app.include_router(pedido_router)
-app.include_router(detalle_router)
-app.include_router(historial_router)
+# app.include_router(detalle_router)
+# app.include_router(historial_router)
 
 
 

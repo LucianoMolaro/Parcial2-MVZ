@@ -28,6 +28,7 @@ def login(data: UsuarioLogin, response: Response, uow: UnitOfWork = Depends(get_
     return usuario
 
 
+
 @router.post("/logout")
 def logout(response: Response):
     response.delete_cookie("access_token")
