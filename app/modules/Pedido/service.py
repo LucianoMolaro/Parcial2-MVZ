@@ -26,6 +26,13 @@ TRANSICIONES: dict[str, list[str]] = {
 CANCELACION_CLIENT = {"PENDIENTE", "CONFIRMADO"}
 
 
+def _get_roles(uow: UnitOfWork, usuario_id: int) -> list[str]:
+    return uow._session.exec(
+        select(UsuarioRol.rol_codigo).where(UsuarioRol.usuario_id == usuario_id)
+    ).all()
+
+
+
 def _cargar_detalles(uow: UnitOfWork, pedido: Pedido) -> Pedido:
     pedido.detalles = uow._session.exec(
         select(DetallePedido).where(DetallePedido.pedido_id == pedido.id)
