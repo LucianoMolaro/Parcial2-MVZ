@@ -11,13 +11,6 @@ from app.modules.Pedido import service as pedido_service
 
 router = APIRouter(prefix="/pedidos", tags=["Pedidos"])
 
-
-def _get_roles(uow: UnitOfWork, usuario_id: int) -> list[str]:
-    return uow._session.exec(
-        select(UsuarioRol.rol_codigo).where(UsuarioRol.usuario_id == usuario_id)
-    ).all()
-
-
 @router.get("/", response_model=List[PedidoRead])
 def listar_pedidos(
     offset: int = 0,
