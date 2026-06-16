@@ -18,6 +18,7 @@ from app.modules.ProductoIngrediente.model import ProductoIngrediente
 from app.modules.Ingrediente.model import Ingrediente
 from app.modules.UnidadMedida.model import UnidadMedida
 from app.modules.Pago.model import Pago
+from app.modules.HistorialEstadoPedido.model import HistorialEstadoPedido
 
 from app.core.Database import create_db_and_tables
 from app.core.Seed import seed
@@ -35,6 +36,7 @@ from app.modules.FormaPago.router import router as forma_pago_router
 from app.modules.Pedido.router import router as pedido_router
 from app.modules.DetallePedido.router import router as detalle_router
 from app.modules.UnidadMedida.router import router as unidad_medida_router
+from app.modules.Pago.router import router as pago_router
 # from app.modules.Admin.router import router as admin_router
 
 
@@ -73,6 +75,7 @@ app.include_router(forma_pago_router)
 app.include_router(pedido_router)
 app.include_router(detalle_router)
 app.include_router(unidad_medida_router)
+app.include_router(pago_router)
 
 
 

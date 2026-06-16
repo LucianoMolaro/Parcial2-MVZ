@@ -27,8 +27,9 @@ ESTADOS_PEDIDO = [
 ]
 
 FORMAS_PAGO = [
-    FormaPago(codigo="EFECTIVO",       descripcion="Pago en efectivo",   habilitado=True),
-    FormaPago(codigo="MERCADOPAGO_QR", descripcion="Mercado Pago QR",   habilitado=True),
+    FormaPago(codigo="EFECTIVO",       descripcion="Pago en efectivo",        habilitado=True),
+    FormaPago(codigo="MERCADOPAGO",    descripcion="Mercado Pago Checkout",   habilitado=True),
+    FormaPago(codigo="MERCADOPAGO_QR", descripcion="Mercado Pago QR",         habilitado=False),
 ]
 
 USUARIOS = [

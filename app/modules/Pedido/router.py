@@ -1,12 +1,10 @@
 from typing import Annotated, List
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlmodel import select
 
 from app.core.deps import get_current_active_user, get_uow, require_role
 from app.core.UnitOfWork import UnitOfWork
 from app.core.WsManager import ws_manager, WsEvent
 from app.modules.Usuario.model import Usuario
-from app.modules.UsuarioRol.model import UsuarioRol
 from app.modules.Pedido.schema import PedidoCambiarEstado, PedidoCreate, PedidoRead
 from app.modules.Pedido import service as pedido_service
 
@@ -14,9 +12,7 @@ router = APIRouter(prefix="/pedidos", tags=["Pedidos"])
 
 
 def _get_roles(uow: UnitOfWork, usuario_id: int) -> list[str]:
-    return uow._session.exec(
-        select(UsuarioRol.rol_codigo).where(UsuarioRol.usuario_id == usuario_id)
-    ).all()
+    return uow.usuario_roles.get_codigos_by_usuario(usuario_id)
 
 
 @router.get("/", response_model=List[PedidoRead])

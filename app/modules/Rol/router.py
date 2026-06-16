@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends
-from sqlmodel import select
 
 from app.core.deps import get_uow, require_role
 from app.core.UnitOfWork import UnitOfWork
@@ -13,4 +12,4 @@ def listar_roles(
     uow: UnitOfWork = Depends(get_uow),
     _=Depends(require_role(["ADMIN"])),
 ):
-    return uow._session.exec(select(Rol)).all()
+    return uow.roles.listar()

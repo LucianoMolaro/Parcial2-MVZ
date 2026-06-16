@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends
-from sqlmodel import select
 
 from app.core.deps import get_current_active_user, get_uow
 from app.core.UnitOfWork import UnitOfWork
@@ -13,4 +12,4 @@ def listar_formas_pago(
     uow: UnitOfWork = Depends(get_uow),
     _=Depends(get_current_active_user),
 ):
-    return uow._session.exec(select(FormaPago).where(FormaPago.habilitado == True)).all()
+    return uow.formas_pago.get_habilitadas()

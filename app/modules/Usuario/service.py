@@ -49,14 +49,10 @@ def registrar(data: UsuarioCreate, uow: UnitOfWork) -> UsuarioRead:
         username=data.username,
         password_hash=password_hash,
     )
-    usuario_existente = uow._session.exec(select(Usuario).where(Usuario.username == data.username)).first()
-
-    if usuario_existente:
+    if uow.usuarios.get_by_username(data.username):
         raise HTTPException(400, "El nombre de usuario ya existe")
 
-    email_existente = uow._session.exec(select(Usuario).where(Usuario.email == data.email)).first()
-
-    if email_existente:
+    if uow.usuarios.get_by_email(data.email):
         raise HTTPException(400, "El email ya está registrado")
     
     with uow:

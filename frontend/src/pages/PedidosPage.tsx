@@ -1,8 +1,9 @@
 import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { useAuthUser } from "../context/AuthContext";
-import { getPedidos, cambiarEstadoPedido } from "../api/api";
+import { getPedidos, cambiarEstadoPedido, crearPreferenciaMp } from "../api/api";
 import { Pedido } from "../types";
 import { useWebSocket } from "../hooks/useWebSocket";
 
@@ -33,6 +34,9 @@ const LABEL_ACCION: Record<string, string> = {
 export default function PedidosPage() {
   const { user } = useAuthUser();
   const qc = useQueryClient();
+  const [searchParams] = useSearchParams();
+  const pagoResultado = searchParams.get("pago");
+
   const roles = user?.roles.map((r) => r.codigo) ?? [];
   const esOperador = roles.includes("ADMIN") || roles.includes("PEDIDOS");
   const esCliente = roles.includes("CLIENT") && !esOperador;
@@ -59,11 +63,34 @@ export default function PedidosPage() {
     onError: (e: Error) => alert(e.message),
   });
 
+  const pagarMpMut = useMutation({
+    mutationFn: (pedidoId: number) => crearPreferenciaMp(pedidoId),
+    onSuccess: ({ checkout_url }) => { window.location.href = checkout_url; },
+    onError: (e: Error) => alert(e.message),
+  });
+
   return (
     <div style={{ backgroundColor: "#1E2328", minHeight: "100vh" }}>
       <Navbar />
 
       <div className="max-w-5xl mx-auto px-6 py-8">
+        {pagoResultado && (
+          <div
+            className="mb-4 px-4 py-3 rounded text-sm font-medium"
+            style={
+              pagoResultado === "exitoso"
+                ? { backgroundColor: "#14532d", color: "#86efac" }
+                : pagoResultado === "pendiente"
+                ? { backgroundColor: "#78350f", color: "#fde68a" }
+                : { backgroundColor: "#7f1d1d", color: "#fca5a5" }
+            }
+          >
+            {pagoResultado === "exitoso" && "✓ Pago aprobado. Tu pedido fue confirmado."}
+            {pagoResultado === "pendiente" && "⏳ Pago pendiente. Aguardamos confirmación de Mercado Pago."}
+            {pagoResultado === "fallido" && "✗ El pago no pudo procesarse. Intentá de nuevo o elegí otro método."}
+          </div>
+        )}
+
         <div className="flex justify-between items-center mb-6">
           <h1 style={{ color: "#F1DFC8" }} className="text-2xl font-bold">
             {esOperador ? "Gestión de pedidos" : "Mis pedidos"}
@@ -92,7 +119,8 @@ export default function PedidosPage() {
                 esOperador={esOperador}
                 esCliente={esCliente}
                 onCambiar={(estado) => cambiarMut.mutate({ id: pedido.id, estado })}
-                cargando={cambiarMut.isPending}
+                onPagarMp={() => pagarMpMut.mutate(pedido.id)}
+                cargando={cambiarMut.isPending || pagarMpMut.isPending}
               />
             ))}
           </div>
@@ -107,10 +135,11 @@ interface TarjetaProps {
   esOperador: boolean;
   esCliente: boolean;
   onCambiar: (estado: string) => void;
+  onPagarMp: () => void;
   cargando: boolean;
 }
 
-function TarjetaPedido({ pedido, esOperador, esCliente, onCambiar, cargando }: TarjetaProps) {
+function TarjetaPedido({ pedido, esOperador, esCliente, onCambiar, onPagarMp, cargando }: TarjetaProps) {
   const color = COLORES[pedido.estado_codigo] ?? COLORES["CANCELADO"];
 
   const transiciones = esOperador
@@ -138,7 +167,11 @@ function TarjetaPedido({ pedido, esOperador, esCliente, onCambiar, cargando }: T
               {color.label}
             </span>
             <span style={{ color: "#A6A29A" }} className="text-xs">
-              {pedido.forma_pago_codigo === "MERCADOPAGO_QR" ? "Mercado Pago QR" : "Efectivo"}
+              {pedido.forma_pago_codigo === "MERCADOPAGO"
+                ? "Mercado Pago"
+                : pedido.forma_pago_codigo === "MERCADOPAGO_QR"
+                ? "Mercado Pago QR"
+                : "Efectivo"}
             </span>
           </div>
 
@@ -179,6 +212,19 @@ function TarjetaPedido({ pedido, esOperador, esCliente, onCambiar, cargando }: T
               ${Number(pedido.total).toFixed(2)}
             </p>
           </div>
+
+          {esCliente &&
+            pedido.estado_codigo === "PENDIENTE" &&
+            pedido.forma_pago_codigo === "MERCADOPAGO" && (
+              <button
+                onClick={onPagarMp}
+                disabled={cargando}
+                className="px-3 py-1.5 rounded text-sm font-medium disabled:opacity-50 hover:opacity-80 transition-opacity"
+                style={{ backgroundColor: "#009ee3", color: "#fff" }}
+              >
+                Pagar con Mercado Pago
+              </button>
+            )}
 
           {transiciones.length > 0 && (
             <div className="flex gap-2 flex-wrap justify-end">

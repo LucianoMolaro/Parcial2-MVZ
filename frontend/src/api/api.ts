@@ -163,3 +163,10 @@ export const cambiarEstadoPedido = async (id: number, data: { estado_pedido_codi
   await check(res);
   return res.json();
 };
+
+// --- Pagos ---
+export const crearPreferenciaMp = async (pedidoId: number): Promise<{ checkout_url: string; pedido_id: number }> => {
+  const res = await fetch(`${BASE}/pagos/preferencia/${pedidoId}`, opts("POST"));
+  await check(res);
+  return res.json();
+};

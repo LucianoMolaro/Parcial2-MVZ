@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { getProductos, getCategorias } from "../api/api";
+import { getProductos, getCategorias, crearPreferenciaMp } from "../api/api";
 import { Producto } from "../types";
 
 const BASE = "http://localhost:8000";
@@ -109,14 +109,25 @@ export default function ClientePage() {
         const err = await res.json();
         throw new Error(err.detail ?? "Error al crear pedido");
       }
-      return res.json();
+      return res.json() as Promise<{ id: number }>;
     },
-    onSuccess: () => {
+    onSuccess: async (pedido) => {
       setCart([]);
       saveCart([]);
       setCheckoutOpen(false);
       setCartOpen(false);
-      setPedidoOk(true);
+
+      if (formaPago === "MERCADOPAGO") {
+        try {
+          const { checkout_url } = await crearPreferenciaMp(pedido.id);
+          window.location.href = checkout_url;
+        } catch {
+          alert("Pedido creado. No se pudo conectar con Mercado Pago — intentá pagar desde Mis Pedidos.");
+          setPedidoOk(true);
+        }
+      } else {
+        setPedidoOk(true);
+      }
     },
     onError: (e: Error) => alert(e.message),
   });
@@ -289,7 +300,7 @@ export default function ClientePage() {
                   <p className="font-semibold mb-1 text-sm">Forma de pago:</p>
                   <select className="border rounded px-3 py-2 w-full" value={formaPago} onChange={(e) => setFormaPago(e.target.value)}>
                     <option value="EFECTIVO">Efectivo</option>
-                    <option value="MERCADOPAGO_QR">Mercado Pago QR</option>
+                    <option value="MERCADOPAGO">Mercado Pago</option>
                   </select>
                 </div>
 
