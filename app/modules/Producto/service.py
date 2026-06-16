@@ -1,64 +1,78 @@
 from typing import List, Optional
+
 from fastapi import HTTPException
 from sqlmodel import select
 
 from app.core.UnitOfWork import UnitOfWork
-from app.modules.Producto.model import Producto
-from app.modules.Producto.schema import ProductoCreate, ProductoDisponibilidadUpdate, ProductoIngredienteRead
 from app.modules.Categoria.model import Categoria
+from app.modules.Categoria.schema import CategoriaRead
 from app.modules.Ingrediente.model import Ingrediente
+from app.modules.Producto.model import Producto
+from app.modules.Producto.schema import (
+    ProductoCreate,
+    ProductoDisponibilidadUpdate,
+    ProductoIngredienteRead,
+    ProductoRead,
+)
 from app.modules.ProductoCategoria.model import ProductoCategoria
 from app.modules.ProductoIngrediente.model import ProductoIngrediente
 
 
-def _cargar(uow: UnitOfWork, producto: Producto) -> dict:
-    _ = producto.categorias
-    _ = producto.ingrediente_links
-    for link in producto.ingrediente_links:
-        _ = link.ingrediente
-    ingredientes = [
-        ProductoIngredienteRead(
-            ingrediente_id=link.ingrediente_id,
-            nombre=link.ingrediente.nombre,
-            unidad=link.ingrediente.unidad,
-            es_alergeno=link.ingrediente.es_alergeno,
-            stock_cantidad=link.ingrediente.stock_cantidad,
-            cantidad=link.cantidad,
-        )
-        for link in producto.ingrediente_links
-    ]
-    return {
-        "id": producto.id,
-        "nombre": producto.nombre,
-        "precio": producto.precio,
-        "descripcion": producto.descripcion,
-        "disponible": producto.disponible,
-        "stock_cantidad": producto.stock_cantidad,
-        "categorias": producto.categorias,
-        "ingredientes": ingredientes,
-    }
+def _cargar(uow: UnitOfWork, producto: Producto) -> ProductoRead:
+    pc_links = uow._session.exec(
+        select(ProductoCategoria).where(ProductoCategoria.producto_id == producto.id)
+    ).all()
+    categorias = []
+    for link in pc_links:
+        cat = uow._session.get(Categoria, link.categoria_id)
+        if cat:
+            categorias.append(CategoriaRead.model_validate(cat))
+
+    pi_links = uow._session.exec(
+        select(ProductoIngrediente).where(ProductoIngrediente.producto_id == producto.id)
+    ).all()
+    ingredientes = []
+    for link in pi_links:
+        ing = uow._session.get(Ingrediente, link.ingrediente_id)
+        if ing:
+            ingredientes.append(ProductoIngredienteRead(
+                ingrediente_id=ing.id,
+                nombre=ing.nombre,
+                unidad_medida_id=ing.unidad_medida_id,
+                es_alergeno=ing.es_alergeno,
+                stock_cantidad=ing.stock_cantidad,
+                cantidad=float(link.cantidad),
+            ))
+
+    return ProductoRead(
+        id=producto.id,
+        nombre=producto.nombre,
+        precio=producto.precio,
+        descripcion=producto.descripcion,
+        disponible=producto.disponible,
+        stock_cantidad=producto.stock_cantidad,
+        categorias=categorias,
+        ingredientes=ingredientes,
+    )
 
 
-def get_all(uow: UnitOfWork, nombre: Optional[str], categoria_id: Optional[int],
-            solo_disponibles: bool, offset: int, limit: int) -> List[dict]:
-    query = select(Producto).where(Producto.deleted == False)
-    if nombre:
-        query = query.where(Producto.nombre.contains(nombre))
-    if categoria_id:
-        query = query.join(ProductoCategoria).where(ProductoCategoria.categoria_id == categoria_id)
-    if solo_disponibles:
-        query = query.where(Producto.disponible == True)
-    return [_cargar(uow, p) for p in uow._session.exec(query.offset(offset).limit(limit)).all()]
+def get_productos(uow: UnitOfWork, es_admin: bool, page: int) -> List[ProductoRead]:
+    offset = (page - 1) * 5
+    if not es_admin:
+        query = select(Producto).where(Producto.habilitado == True, Producto.disponible == True).offset(offset).limit(5)
+    else:
+        query = select(Producto).offset(offset).limit(5)
+    return [_cargar(uow, p) for p in uow._session.exec(query).all()]
 
 
-def get_by_id(uow: UnitOfWork, producto_id: int) -> dict:
+def get_by_id(uow: UnitOfWork, producto_id: int) -> ProductoRead:
     producto = uow._session.get(Producto, producto_id)
-    if not producto or producto.deleted:
+    if not producto or not producto.habilitado:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     return _cargar(uow, producto)
 
 
-def create(uow: UnitOfWork, data: ProductoCreate) -> dict:
+def create(uow: UnitOfWork, data: ProductoCreate) -> ProductoRead:
     with uow:
         producto = Producto(
             nombre=data.nombre, precio=data.precio, descripcion=data.descripcion,
@@ -84,10 +98,10 @@ def create(uow: UnitOfWork, data: ProductoCreate) -> dict:
         return _cargar(uow, producto)
 
 
-def update(uow: UnitOfWork, producto_id: int, data: ProductoCreate) -> dict:
+def update(uow: UnitOfWork, producto_id: int, data: ProductoCreate) -> ProductoRead:
     with uow:
         producto = uow._session.get(Producto, producto_id)
-        if not producto or producto.deleted:
+        if not producto or not producto.habilitado:
             raise HTTPException(status_code=404, detail="Producto no encontrado")
 
         producto.nombre = data.nombre
@@ -114,10 +128,10 @@ def update(uow: UnitOfWork, producto_id: int, data: ProductoCreate) -> dict:
         return _cargar(uow, producto)
 
 
-def update_disponibilidad(uow: UnitOfWork, producto_id: int, data: ProductoDisponibilidadUpdate) -> dict:
+def update_disponibilidad(uow: UnitOfWork, producto_id: int, data: ProductoDisponibilidadUpdate) -> ProductoRead:
     with uow:
         producto = uow._session.get(Producto, producto_id)
-        if not producto or producto.deleted:
+        if not producto or not producto.habilitado:
             raise HTTPException(status_code=404, detail="Producto no encontrado")
         producto.stock_cantidad = data.stock_cantidad
         producto.disponible = data.disponible
@@ -125,12 +139,12 @@ def update_disponibilidad(uow: UnitOfWork, producto_id: int, data: ProductoDispo
         return _cargar(uow, producto)
 
 
-def reactivar(uow: UnitOfWork, producto_id: int) -> dict:
+def reactivar(uow: UnitOfWork, producto_id: int) -> ProductoRead:
     with uow:
         producto = uow._session.get(Producto, producto_id)
         if not producto:
             raise HTTPException(status_code=404, detail="Producto no encontrado")
-        producto.deleted = False
+        producto.habilitado = True
         uow._session.flush()
         return _cargar(uow, producto)
 
@@ -138,7 +152,7 @@ def reactivar(uow: UnitOfWork, producto_id: int) -> dict:
 def delete(uow: UnitOfWork, producto_id: int) -> None:
     with uow:
         producto = uow._session.get(Producto, producto_id)
-        if not producto or producto.deleted:
+        if not producto or not producto.habilitado:
             raise HTTPException(status_code=404, detail="Producto no encontrado")
-        producto.deleted = True
+        producto.habilitado = False
         uow._session.flush()

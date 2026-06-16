@@ -25,7 +25,7 @@ class UnitOfWork:
     def __enter__(self) -> "UnitOfWork":
         return self
 
-    def __exit__(self, exc_type) -> None:
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         if exc_type is None:
             self._session.commit()
         else:

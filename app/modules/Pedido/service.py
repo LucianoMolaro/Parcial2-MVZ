@@ -67,7 +67,7 @@ def create(uow: UnitOfWork, usuario_id: int, data: PedidoCreate) -> Pedido:
         items = []
         for item in data.detalles:
             producto = uow._session.get(Producto, item.producto_id)
-            if not producto or not producto.disponible or producto.deleted:
+            if not producto or not producto.disponible or not producto.habilitado:
                 raise HTTPException(status_code=404, detail=f"Producto {item.producto_id} no disponible")
             precio = Decimal(str(producto.precio))
             subtotal += precio * item.cantidad
@@ -163,6 +163,19 @@ def cambiar_estado(
                 )
 
         pedido.estado_codigo = destino
+
+        if destino == "CANCELADO":
+            detalles = uow._session.exec(
+                select(DetallePedido).where(DetallePedido.pedido_id == pedido.id)
+            ).all()
+            for detalle in detalles:
+                links = uow._session.exec(
+                    select(ProductoIngrediente).where(ProductoIngrediente.producto_id == detalle.producto_id)
+                ).all()
+                for link in links:
+                    ingrediente = uow._session.get(Ingrediente, link.ingrediente_id)
+                    if ingrediente:
+                        ingrediente.stock_cantidad += link.cantidad * detalle.cantidad
 
         uow._session.add(HistorialEstadoPedido(
             pedido_id=pedido.id,

@@ -18,6 +18,6 @@ def autenticar(username: str, password: str, uow: UnitOfWork) -> tuple[str, Usua
     from datetime import timedelta
     token = create_access_token(
         {"sub": usuario.username},
-        expires_delta=timedelta(minutes=get_acces_token_minutes),
+        expires_delta=timedelta(minutes=get_acces_token_minutes()),
     )
     return token, usuario

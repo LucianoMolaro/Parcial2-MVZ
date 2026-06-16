@@ -10,5 +10,3 @@ class UsuarioRol(SQLModel, table=True):
     usuario_id: int = Field(foreign_key="usuario.id",primary_key=True)
     rol_codigo: str = Field(foreign_key="rol.codigo",primary_key=True)
 
-    # usuario: "Usuario" = Relationship(back_populates="roles")
-    # rol: "Rol" = Relationship(back_populates="usuarios")

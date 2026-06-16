@@ -15,8 +15,8 @@ from app.modules.UsuarioRol.model import UsuarioRol
 from app.modules.Rol.model import Rol
 from app.modules.ProductoIngrediente.model import ProductoIngrediente
 from app.modules.Ingrediente.model import Ingrediente
-from app.modules.HistorialDetallePedido.model import HistorialDetallePedido
-
+from app.modules.UnidadMedida.model import UnidadMedida
+from app.modules.Pago.model import Pago
 
 from app.core.Database import create_db_and_tables
 from app.core.Seed import seed
@@ -33,7 +33,7 @@ from app.modules.EstadoPedido.router import router as estado_pedido_router
 from app.modules.FormaPago.router import router as forma_pago_router
 from app.modules.Pedido.router import router as pedido_router
 from app.modules.DetallePedido.router import router as detalle_router
-from app.modules.HistorialDetallePedido.router import router as historial_router
+from app.modules.UnidadMedida.router import router as unidad_medida_router
 # from app.modules.Admin.router import router as admin_router
 
 
@@ -71,7 +71,7 @@ app.include_router(estado_pedido_router)
 app.include_router(forma_pago_router)
 app.include_router(pedido_router)
 app.include_router(detalle_router)
-app.include_router(historial_router)
+app.include_router(unidad_medida_router)
 
 
 

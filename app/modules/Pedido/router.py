@@ -68,10 +68,11 @@ def cambiar_estado(
 def cancelar_pedido(
     pedido_id: int,
     uow: UnitOfWork = Depends(get_uow),
+    current_user: Usuario = Depends(get_current_active_user),
     _=Depends(require_role(["ADMIN"])),
 ):
     pedido_service.cambiar_estado(
         uow, pedido_id,
         PedidoCambiarEstado(estado_pedido_codigo="CANCELADO", motivo="Cancelado por ADMIN"),
-        actor_id=0, es_cliente=False,
+        actor_id=current_user.id, es_cliente=False,
     )

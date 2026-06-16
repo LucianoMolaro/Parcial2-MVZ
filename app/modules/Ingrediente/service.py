@@ -27,7 +27,7 @@ def create(uow: UnitOfWork, data: IngredienteCreate) -> Ingrediente:
     with uow:
         nuevo = Ingrediente(
             nombre=data.nombre,
-            unidad=data.unidad,
+            unidad_medida_id=data.unidad_medida_id,
             es_alergeno=data.es_alergeno,
             stock_cantidad=data.stock_cantidad,
         )
@@ -42,7 +42,7 @@ def update(uow: UnitOfWork, ingrediente_id: int, data: IngredienteCreate) -> Ing
         if not ingrediente:
             raise HTTPException(status_code=404, detail="Ingrediente no encontrado")
         ingrediente.nombre = data.nombre
-        ingrediente.unidad = data.unidad
+        ingrediente.unidad_medida_id = data.unidad_medida_id
         ingrediente.es_alergeno = data.es_alergeno
         ingrediente.stock_cantidad = data.stock_cantidad
         uow._session.flush()

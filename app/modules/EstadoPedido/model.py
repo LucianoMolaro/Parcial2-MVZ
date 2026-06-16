@@ -24,4 +24,4 @@ class EstadoPedido(SQLModel, table=True):
             "foreign_keys": "[HistorialEstadoPedido.estado_hacia_id]"
         }
     )
-    pedidos: List["Pedido"] = Relationship(back_populates="estado_pedido")
+
