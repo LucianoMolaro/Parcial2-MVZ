@@ -1,7 +1,7 @@
-import { ProductoPublic } from "../models/Producto";
+import { Producto } from "../types";
 
 interface ProductCardProps {
-  producto: ProductoPublic;
+  producto: Producto;
 }
 
 export default function ProductCard({ producto }: ProductCardProps) {

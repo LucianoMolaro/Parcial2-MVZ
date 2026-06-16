@@ -4,9 +4,8 @@ from fastapi import APIRouter, Depends, Query
 
 from app.core.deps import get_current_active_user, get_uow, require_role
 from app.core.UnitOfWork import UnitOfWork
-from app.modules.Ingrediente.schema import IngredienteCreate, IngredienteRead
+from app.modules.Ingrediente.schema import IngredienteCreate, IngredienteRead, IngredienteUpdate
 from app.modules.Ingrediente import service as ingrediente_service
-from app.modules.UnidadMedida.model import UnidadMedida
 
 router = APIRouter(prefix="/ingredientes", tags=["Ingredientes"])
 
@@ -44,7 +43,7 @@ def crear_ingrediente(
 @router.put("/{ingrediente_id}", response_model=IngredienteRead)
 def editar_ingrediente(
     ingrediente_id: int,
-    datos: IngredienteCreate,
+    datos: IngredienteUpdate,
     uow: UnitOfWork = Depends(get_uow),
     _=Depends(require_role(["ADMIN", "STOCK"])),
 ):
@@ -58,4 +57,3 @@ def eliminar_ingrediente(
     _=Depends(require_role(["ADMIN"])),
 ):
     ingrediente_service.delete(uow, ingrediente_id)
-

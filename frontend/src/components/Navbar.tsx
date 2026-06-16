@@ -109,7 +109,7 @@ export default function Navbar() {
  
         {/* CARRITO */}
         <button
-          onClick={() => navigate('/carrito')}
+          onClick={() => navigate('/cliente')}
           className="relative p-2 rounded-lg transition-colors flex-shrink-0"
           style={{ color: '#C96A3D' }}
           onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(201, 106, 61, 0.1)'}
@@ -117,7 +117,7 @@ export default function Navbar() {
         >
           <ShoppingCart size={24} />
           {cartCount > 0 && (
-            <span 
+            <span
               className="absolute -top-2 -right-2 w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center"
               style={{ backgroundColor: '#C96A3D', color: '#F1DFC8' }}
             >
@@ -194,27 +194,73 @@ export default function Navbar() {
             Productos
           </button>
  
-          <button
-            onClick={() => {
-              navigate('/pedidos')
-              setAbrir(false)
-            }}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors"
-            style={{ color: '#F1DFC8' }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#2F5D62'
-              e.currentTarget.style.color = '#C96A3D'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent'
-              e.currentTarget.style.color = '#F1DFC8'
-            }}
-          >
-            <BookOpen size={18} style={{ color: 'inherit' }} />
-            Pedidos
-          </button>
- 
-          {isLoggedIn && (
+          {isLoggedIn && roles?.includes('CLIENT') && (
+            <button
+              onClick={() => {
+                navigate('/cliente')
+                setAbrir(false)
+              }}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors"
+              style={{ color: '#F1DFC8' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#2F5D62'
+                e.currentTarget.style.color = '#C96A3D'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent'
+                e.currentTarget.style.color = '#F1DFC8'
+              }}
+            >
+              <ShoppingCart size={18} style={{ color: 'inherit' }} />
+              Tienda
+            </button>
+          )}
+
+          {isLoggedIn && (roles?.includes('PEDIDOS') || roles?.includes('ADMIN')) && (
+            <button
+              onClick={() => {
+                navigate('/pedidos')
+                setAbrir(false)
+              }}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors"
+              style={{ color: '#F1DFC8' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#2F5D62'
+                e.currentTarget.style.color = '#C96A3D'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent'
+                e.currentTarget.style.color = '#F1DFC8'
+              }}
+            >
+              <BookOpen size={18} style={{ color: 'inherit' }} />
+              Pedidos
+            </button>
+          )}
+
+          {isLoggedIn && roles?.includes('ADMIN') && (
+            <button
+              onClick={() => {
+                navigate('/categorias')
+                setAbrir(false)
+              }}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors"
+              style={{ color: '#F1DFC8' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#2F5D62'
+                e.currentTarget.style.color = '#C96A3D'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent'
+                e.currentTarget.style.color = '#F1DFC8'
+              }}
+            >
+              <BookOpen size={18} style={{ color: 'inherit' }} />
+              Categorías
+            </button>
+          )}
+
+          {isLoggedIn && roles?.includes('ADMIN') && (
             <button
               onClick={() => {
                 navigate('/usuarios')
@@ -235,26 +281,28 @@ export default function Navbar() {
               Usuarios
             </button>
           )}
- 
-          <button
-            onClick={() => {
-              navigate('/ingredientes')
-              setAbrir(false)
-            }}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors"
-            style={{ color: '#F1DFC8' }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#2F5D62'
-              e.currentTarget.style.color = '#C96A3D'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent'
-              e.currentTarget.style.color = '#F1DFC8'
-            }}
-          >
-            <BookOpen size={18} style={{ color: 'inherit' }} />
-            Ingredientes
-          </button>
+
+          {isLoggedIn && (roles?.includes('STOCK') || roles?.includes('ADMIN')) && (
+            <button
+              onClick={() => {
+                navigate('/ingredientes')
+                setAbrir(false)
+              }}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors"
+              style={{ color: '#F1DFC8' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#2F5D62'
+                e.currentTarget.style.color = '#C96A3D'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent'
+                e.currentTarget.style.color = '#F1DFC8'
+              }}
+            >
+              <BookOpen size={18} style={{ color: 'inherit' }} />
+              Ingredientes
+            </button>
+          )}
         </div>
  
         {/* Footer Sidebar */}

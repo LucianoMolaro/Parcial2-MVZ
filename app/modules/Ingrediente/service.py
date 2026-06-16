@@ -4,26 +4,40 @@ from sqlmodel import select
 
 from app.core.UnitOfWork import UnitOfWork
 from app.modules.Ingrediente.model import Ingrediente
-from app.modules.Ingrediente.schema import IngredienteCreate
+from app.modules.Ingrediente.schema import IngredienteCreate, IngredienteRead, IngredienteUpdate
+from app.modules.UnidadMedida.model import UnidadMedida
 
 
-def get_all(uow: UnitOfWork, nombre: Optional[str], es_alergeno: Optional[bool], offset: int, limit: int) -> List[Ingrediente]:
+def _enrich(uow: UnitOfWork, ing: Ingrediente) -> IngredienteRead:
+    read = IngredienteRead.model_validate(ing)
+    unidad = uow._session.get(UnidadMedida, ing.unidad_medida_id)
+    if unidad:
+        read.unidad_medida_nombre = unidad.nombre
+        read.unidad_medida_simbolo = unidad.simbolo
+    return read
+
+
+def get_all(uow: UnitOfWork, nombre: Optional[str], es_alergeno: Optional[bool], offset: int, limit: int) -> List[IngredienteRead]:
     query = select(Ingrediente)
     if nombre:
         query = query.where(Ingrediente.nombre.contains(nombre))
     if es_alergeno is not None:
         query = query.where(Ingrediente.es_alergeno == es_alergeno)
-    return uow._session.exec(query.offset(offset).limit(limit)).all()
+    ingredientes = uow._session.exec(query.offset(offset).limit(limit)).all()
+    return [_enrich(uow, ing) for ing in ingredientes]
 
 
-def get_by_id(uow: UnitOfWork, ingrediente_id: int) -> Ingrediente:
-    ingrediente = uow._session.get(Ingrediente, ingrediente_id)
-    if not ingrediente:
+def get_by_id(uow: UnitOfWork, ingrediente_id: int) -> IngredienteRead:
+    ing = uow._session.get(Ingrediente, ingrediente_id)
+    if not ing:
         raise HTTPException(status_code=404, detail="Ingrediente no encontrado")
-    return ingrediente
+    return _enrich(uow, ing)
 
 
-def create(uow: UnitOfWork, data: IngredienteCreate) -> Ingrediente:
+def create(uow: UnitOfWork, data: IngredienteCreate) -> IngredienteRead:
+    unidad = uow._session.get(UnidadMedida, data.unidad_medida_id)
+    if not unidad:
+        raise HTTPException(status_code=404, detail="Unidad de medida no encontrada")
     with uow:
         nuevo = Ingrediente(
             nombre=data.nombre,
@@ -33,26 +47,25 @@ def create(uow: UnitOfWork, data: IngredienteCreate) -> Ingrediente:
         )
         uow._session.add(nuevo)
         uow._session.flush()
-        return nuevo
+        return _enrich(uow, nuevo)
 
 
-def update(uow: UnitOfWork, ingrediente_id: int, data: IngredienteCreate) -> Ingrediente:
+def update(uow: UnitOfWork, ingrediente_id: int, data: IngredienteUpdate) -> IngredienteRead:
     with uow:
-        ingrediente = uow._session.get(Ingrediente, ingrediente_id)
-        if not ingrediente:
+        ing = uow._session.get(Ingrediente, ingrediente_id)
+        if not ing:
             raise HTTPException(status_code=404, detail="Ingrediente no encontrado")
-        ingrediente.nombre = data.nombre
-        ingrediente.unidad_medida_id = data.unidad_medida_id
-        ingrediente.es_alergeno = data.es_alergeno
-        ingrediente.stock_cantidad = data.stock_cantidad
+        ing.nombre = data.nombre
+        ing.es_alergeno = data.es_alergeno
+        ing.stock_cantidad = data.stock_cantidad
         uow._session.flush()
-        return ingrediente
+        return _enrich(uow, ing)
 
 
 def delete(uow: UnitOfWork, ingrediente_id: int) -> None:
     with uow:
-        ingrediente = uow._session.get(Ingrediente, ingrediente_id)
-        if not ingrediente:
+        ing = uow._session.get(Ingrediente, ingrediente_id)
+        if not ing:
             raise HTTPException(status_code=404, detail="Ingrediente no encontrado")
-        uow._session.delete(ingrediente)
+        uow._session.delete(ing)
         uow._session.flush()

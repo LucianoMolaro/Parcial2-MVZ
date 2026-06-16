@@ -4,6 +4,7 @@ from sqlmodel import select
 
 from app.core.deps import get_current_active_user, get_uow, require_role
 from app.core.UnitOfWork import UnitOfWork
+from app.core.WsManager import ws_manager, WsEvent
 from app.modules.Usuario.model import Usuario
 from app.modules.UsuarioRol.model import UsuarioRol
 from app.modules.Pedido.schema import PedidoCambiarEstado, PedidoCreate, PedidoRead
@@ -53,7 +54,7 @@ def crear_pedido(
 
 
 @router.patch("/{pedido_id}/estado", response_model=PedidoRead)
-def cambiar_estado(
+async def cambiar_estado(
     pedido_id: int,
     datos: PedidoCambiarEstado,
     uow: UnitOfWork = Depends(get_uow),
@@ -61,7 +62,20 @@ def cambiar_estado(
 ):
     roles = _get_roles(uow, current_user.id)
     es_cliente = not any(r in ["ADMIN", "PEDIDOS"] for r in roles)
-    return pedido_service.cambiar_estado(uow, pedido_id, datos, current_user.id, es_cliente)
+    pedido = pedido_service.cambiar_estado(uow, pedido_id, datos, current_user.id, es_cliente)
+
+    evento = WsEvent(
+        event_type="pedido_estado_actualizado",
+        data={
+            "pedido_id": pedido.id,
+            "usuario_id": pedido.usuario_id,
+            "estado_codigo": pedido.estado_codigo,
+        },
+    )
+    await ws_manager.send_to_room("pedidos_admin", evento)
+    await ws_manager.send_to_room(f"pedido_{pedido.usuario_id}", evento)
+
+    return pedido
 
 
 @router.delete("/{pedido_id}", status_code=204)

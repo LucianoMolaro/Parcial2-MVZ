@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from app.core.WsManager import ws_manager
 
 # import app.core.models
 from app.modules.Pedido.model import Pedido
@@ -73,6 +74,21 @@ app.include_router(pedido_router)
 app.include_router(detalle_router)
 app.include_router(unidad_medida_router)
 
+
+
+@app.websocket("/ws/{client_id}")
+async def websocket_endpoint(websocket: WebSocket, client_id: str):
+    connection = await ws_manager.connect(websocket, client_id)
+    try:
+        while True:
+            message = await connection.receive_text()
+            event = await ws_manager.process_message(client_id, message)
+            if event and event.event_type == "join_room":
+                room = (event.data or {}).get("room")
+                if room:
+                    await ws_manager.join_room(client_id, room)
+    except WebSocketDisconnect:
+        await ws_manager.disconnect(client_id)
 
 
 @app.get("/")

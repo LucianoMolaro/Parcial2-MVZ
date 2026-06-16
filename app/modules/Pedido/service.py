@@ -84,8 +84,7 @@ def create(uow: UnitOfWork, usuario_id: int, data: PedidoCreate) -> Pedido:
                     raise HTTPException(
                         status_code=409,
                         detail=f"Stock insuficiente de '{ingrediente.nombre}' "
-                               f"(disponible: {ingrediente.stock_cantidad} {ingrediente.unidad}, "
-                               f"necesario: {necesario})",
+                               f"(disponible: {ingrediente.stock_cantidad}, necesario: {necesario})",
                     )
 
         total = subtotal + data.costo_envio

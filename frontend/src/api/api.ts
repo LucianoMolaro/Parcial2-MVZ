@@ -1,8 +1,9 @@
 import {
   Categoria, CategoriaCreate, CategoriaTree,
-  Ingrediente, IngredienteCreate,
+  Ingrediente, IngredienteCreate, IngredienteUpdate,
   Producto, ProductoCreate,
   Pedido,
+  UnidadMedida,
 } from "../types";
 
 const BASE = "http://localhost:8000";
@@ -63,6 +64,13 @@ export const eliminarCategoria = async (id: number): Promise<void> => {
   await check(res);
 };
 
+// --- Unidades de Medida ---
+export const getUnidadesMedida = async (): Promise<UnidadMedida[]> => {
+  const res = await fetch(`${BASE}/unidades-medida/`, opts());
+  await check(res);
+  return res.json();
+};
+
 // --- Ingredientes ---
 export const getIngredientes = async (params?: { nombre?: string; es_alergeno?: boolean; offset?: number; limit?: number }): Promise<Ingrediente[]> => {
   const q = new URLSearchParams();
@@ -81,7 +89,7 @@ export const crearIngrediente = async (data: IngredienteCreate): Promise<Ingredi
   return res.json();
 };
 
-export const editarIngrediente = async (id: number, data: IngredienteCreate): Promise<Ingrediente> => {
+export const editarIngrediente = async (id: number, data: IngredienteUpdate): Promise<Ingrediente> => {
   const res = await fetch(`${BASE}/ingredientes/${id}`, opts("PUT", data));
   await check(res);
   return res.json();
