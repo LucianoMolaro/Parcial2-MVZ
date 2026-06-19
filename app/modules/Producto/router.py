@@ -1,17 +1,27 @@
 from typing import Annotated, List, Optional
 from fastapi import APIRouter, Depends, Query, UploadFile, File, HTTPException
 
-from app.core.deps import get_current_active_user, get_uow, require_role
+from app.core.deps import get_current_active_user, get_current_user_optional, get_uow, require_role
 from app.core.UnitOfWork import UnitOfWork
 from app.core.Cloudinary import upload_image
 from app.modules.Producto.schema import ProductoCreate, ProductoDisponibilidadUpdate, ProductoRead
 from app.modules.Producto import service as producto_service
+from app.modules.Usuario.model import Usuario
 
 router = APIRouter(prefix="/productos", tags=["Productos"])
 
+ROLES_ADMIN = {"ADMIN", "STOCK"}
 
 @router.get("/", response_model=List[ProductoRead])
-def listar_productos(es_admin: bool = False,page: int = 1, uow: UnitOfWork= Depends(get_uow)):
+def listar_productos(
+    page: int = 1,
+    uow: UnitOfWork = Depends(get_uow),
+    current_user: Optional[Usuario] = Depends(get_current_user_optional),
+):
+    es_admin = False
+    if current_user:
+        roles = uow.usuarios.get_codigos_roles(current_user.id)
+        es_admin = bool(ROLES_ADMIN.intersection(roles))
     return producto_service.get_productos(uow, es_admin, page)
 
 

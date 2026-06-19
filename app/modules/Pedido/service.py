@@ -1,3 +1,4 @@
+from collections import defaultdict
 from decimal import Decimal
 from typing import List, Optional
 
@@ -51,9 +52,19 @@ def create(uow: UnitOfWork, usuario_id: int, data: PedidoCreate) -> Pedido:
         if not data.detalles:
             raise HTTPException(status_code=422, detail="El pedido debe tener al menos un producto")
 
+        # Fusionar ítems duplicados para evitar violación de PK compuesta (pedido_id, producto_id)
+        merged: dict[int, int] = defaultdict(int)
+        for item in data.detalles:
+            merged[item.producto_id] += item.cantidad
+        from app.modules.Pedido.schema import DetallePedidoCreate
+        detalles_unicos = [
+            DetallePedidoCreate(producto_id=pid, cantidad=cant)
+            for pid, cant in merged.items()
+        ]
+
         subtotal = Decimal("0.00")
         items = []
-        for item in data.detalles:
+        for item in detalles_unicos:
             producto = uow.productos.get_by_id(item.producto_id)
             if not producto or not producto.disponible or not producto.habilitado:
                 raise HTTPException(status_code=404, detail=f"Producto {item.producto_id} no disponible")
@@ -64,7 +75,8 @@ def create(uow: UnitOfWork, usuario_id: int, data: PedidoCreate) -> Pedido:
         for item, producto, _ in items:
             links = uow.producto_ingredientes.get_by_producto(producto.id)
             for link in links:
-                ingrediente = uow.ingredientes.get_by_id(link.ingrediente_id)
+                # SELECT FOR UPDATE: bloquea la fila para evitar race conditions
+                ingrediente = uow.ingredientes.get_by_id_locked(link.ingrediente_id)
                 necesario = float(link.cantidad) * item.cantidad
                 if ingrediente.stock_cantidad < necesario:
                     raise HTTPException(
