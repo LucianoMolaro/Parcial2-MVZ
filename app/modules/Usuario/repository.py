@@ -14,6 +14,9 @@ class UsuarioRepository(Repository[Usuario]):
     def get_by_username(self, username: str):
         return self._session.exec(select(Usuario).where(Usuario.username == username)).first()
 
+    def get_by_email(self, email: str):
+        return self._session.exec(select(Usuario).where(Usuario.email == email)).first()
+
     def get_codigos_roles(self, id_user: int)->list[str]:
         return self._session.exec(
             select(Rol.codigo)

@@ -1,106 +1,251 @@
-import { useState } from "react";
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getPedidos, cambiarEstadoPedido } from "../api/api";
+import { useSearchParams } from "react-router-dom";
+import Navbar from "../components/Navbar";
+import { useAuthUser } from "../context/AuthContext";
+import { getPedidos, cambiarEstadoPedido, crearPreferenciaMp } from "../api/api";
 import { Pedido } from "../types";
+import { useWebSocket } from "../hooks/useWebSocket";
 
-const PAGE_SIZE = 7;
+const COLORES: Record<string, { bg: string; text: string; label: string }> = {
+  PENDIENTE:  { bg: "#78350f", text: "#fde68a", label: "Pendiente"      },
+  CONFIRMADO: { bg: "#1e3a5f", text: "#93c5fd", label: "Confirmado"     },
+  EN_PREP:    { bg: "#7c2d12", text: "#fdba74", label: "En preparación" },
+  EN_CAMINO:  { bg: "#3b0764", text: "#d8b4fe", label: "En camino"      },
+  ENTREGADO:  { bg: "#14532d", text: "#86efac", label: "Entregado"      },
+  CANCELADO:  { bg: "#3f3f46", text: "#d4d4d8", label: "Cancelado"      },
+};
 
-const ESTADOS_SIGUIENTES: Record<string, string[]> = {
+const TRANSICIONES_ADMIN: Record<string, string[]> = {
   PENDIENTE:  ["CONFIRMADO", "CANCELADO"],
   CONFIRMADO: ["EN_PREP",    "CANCELADO"],
   EN_PREP:    ["EN_CAMINO",  "CANCELADO"],
-  EN_CAMINO:  ["ENTREGADO",  "CANCELADO"],
+  EN_CAMINO:  ["ENTREGADO"],
+};
+
+const LABEL_ACCION: Record<string, string> = {
+  CONFIRMADO: "Confirmar",
+  EN_PREP:    "En preparación",
+  EN_CAMINO:  "En camino",
+  ENTREGADO:  "Entregar",
+  CANCELADO:  "Cancelar",
 };
 
 export default function PedidosPage() {
+  const { user } = useAuthUser();
   const qc = useQueryClient();
-  const rol = localStorage.getItem("rol") ?? "";
-  const esAdmin = rol === "ADMIN" || rol === "PEDIDOS";
-  const [page, setPage] = useState(0);
+  const [searchParams] = useSearchParams();
+  const pagoResultado = searchParams.get("pago");
+
+  const roles = user?.roles.map((r) => r.codigo) ?? [];
+  const esOperador = roles.includes("ADMIN") || roles.includes("PEDIDOS");
+  const esCliente = roles.includes("CLIENT") && !esOperador;
+
+  const room = esOperador ? "pedidos_admin" : `pedido_${user?.id}`;
+  const { lastEvent, conectado } = useWebSocket(room);
+
+  useEffect(() => {
+    if (lastEvent?.event_type === "pedido_estado_actualizado") {
+      qc.invalidateQueries({ queryKey: ["pedidos"] });
+    }
+  }, [lastEvent, qc]);
 
   const { data: pedidos = [], isLoading } = useQuery({
-    queryKey: ["pedidos", page],
-    queryFn: () => getPedidos({ offset: page * PAGE_SIZE, limit: PAGE_SIZE }),
+    queryKey: ["pedidos"],
+    queryFn: () => getPedidos({ limit: 50 }),
+    enabled: !!user,
   });
 
   const cambiarMut = useMutation({
     mutationFn: ({ id, estado }: { id: number; estado: string }) =>
       cambiarEstadoPedido(id, { estado_pedido_codigo: estado }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["pedidos"] }),
+    onError: (e: Error) => alert(e.message),
   });
 
-  if (isLoading) return <p className="p-6">Cargando...</p>;
+  const pagarMpMut = useMutation({
+    mutationFn: (pedidoId: number) => crearPreferenciaMp(pedidoId),
+    onSuccess: ({ checkout_url }) => { window.location.href = checkout_url; },
+    onError: (e: Error) => alert(e.message),
+  });
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Pedidos</h1>
+    <div style={{ backgroundColor: "#1E2328", minHeight: "100vh" }}>
+      <Navbar />
 
-      <table className="w-full border border-gray-200 rounded overflow-hidden text-sm">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="p-2 text-left">ID</th>
-            <th className="p-2 text-left">Estado</th>
-            <th className="p-2 text-left">Total</th>
-            <th className="p-2 text-left">Pago</th>
-            <th className="p-2 text-left">Productos</th>
-            {esAdmin && <th className="p-2 text-left">Acciones</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {pedidos.map((p: Pedido) => (
-            <tr key={p.id} className="border-t hover:bg-gray-50">
-              <td className="p-2">{p.id}</td>
-              <td className="p-2">
-                <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">
-                  {p.estado_pedido_codigo}
-                </span>
-              </td>
-              <td className="p-2">${p.total}</td>
-              <td className="p-2">{p.forma_pago_codigo}</td>
-              <td className="p-2 text-gray-500">
-                {p.detalles.map((d) => `${d.nombre} x${d.cantidad}`).join(", ")}
-              </td>
-              {esAdmin && (
-                <td className="p-2">
-                  <div className="flex gap-1 flex-wrap">
-                    {(ESTADOS_SIGUIENTES[p.estado_pedido_codigo] ?? []).map((e) => (
-                      <button
-                        key={e}
-                        onClick={() => cambiarMut.mutate({ id: p.id, estado: e })}
-                        className="bg-blue-500 text-white px-2 py-0.5 rounded text-xs hover:bg-blue-600"
-                      >
-                        → {e}
-                      </button>
-                    ))}
-                  </div>
-                </td>
-              )}
-            </tr>
-          ))}
-          {pedidos.length === 0 && (
-            <tr>
-              <td colSpan={6} className="p-4 text-center text-gray-400">Sin pedidos</td>
-            </tr>
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        {pagoResultado && (
+          <div
+            className="mb-4 px-4 py-3 rounded text-sm font-medium"
+            style={
+              pagoResultado === "exitoso"
+                ? { backgroundColor: "#14532d", color: "#86efac" }
+                : pagoResultado === "pendiente"
+                ? { backgroundColor: "#78350f", color: "#fde68a" }
+                : { backgroundColor: "#7f1d1d", color: "#fca5a5" }
+            }
+          >
+            {pagoResultado === "exitoso" && "✓ Pago aprobado. Tu pedido fue confirmado."}
+            {pagoResultado === "pendiente" && "⏳ Pago pendiente. Aguardamos confirmación de Mercado Pago."}
+            {pagoResultado === "fallido" && "✗ El pago no pudo procesarse. Intentá de nuevo o elegí otro método."}
+          </div>
+        )}
+
+        <div className="flex justify-between items-center mb-6">
+          <h1 style={{ color: "#F1DFC8" }} className="text-2xl font-bold">
+            {esOperador ? "Gestión de pedidos" : "Mis pedidos"}
+          </h1>
+          <div className="flex items-center gap-2">
+            <span
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: conectado ? "#86efac" : "#f87171" }}
+            />
+            <span style={{ color: "#A6A29A" }} className="text-xs">
+              {conectado ? "Tiempo real activo" : "Reconectando..."}
+            </span>
+          </div>
+        </div>
+
+        {isLoading ? (
+          <p style={{ color: "#A6A29A" }} className="text-center py-16">Cargando...</p>
+        ) : pedidos.length === 0 ? (
+          <p style={{ color: "#A6A29A" }} className="text-center py-16">No hay pedidos</p>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {pedidos.map((pedido: Pedido) => (
+              <TarjetaPedido
+                key={pedido.id}
+                pedido={pedido}
+                esOperador={esOperador}
+                esCliente={esCliente}
+                onCambiar={(estado) => cambiarMut.mutate({ id: pedido.id, estado })}
+                onPagarMp={() => pagarMpMut.mutate(pedido.id)}
+                cargando={cambiarMut.isPending || pagarMpMut.isPending}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+interface TarjetaProps {
+  pedido: Pedido;
+  esOperador: boolean;
+  esCliente: boolean;
+  onCambiar: (estado: string) => void;
+  onPagarMp: () => void;
+  cargando: boolean;
+}
+
+function TarjetaPedido({ pedido, esOperador, esCliente, onCambiar, onPagarMp, cargando }: TarjetaProps) {
+  const color = COLORES[pedido.estado_codigo] ?? COLORES["CANCELADO"];
+
+  const transiciones = esOperador
+    ? (TRANSICIONES_ADMIN[pedido.estado_codigo] ?? [])
+    : esCliente && ["PENDIENTE", "CONFIRMADO"].includes(pedido.estado_codigo)
+    ? ["CANCELADO"]
+    : [];
+
+  return (
+    <div
+      className="rounded-lg p-5"
+      style={{ backgroundColor: "#252B32", border: "1px solid #3a3f47" }}
+    >
+      <div className="flex justify-between items-start gap-4 flex-wrap">
+        {/* Columna izquierda */}
+        <div className="flex flex-col gap-2 flex-1 min-w-0">
+          <div className="flex items-center gap-3 flex-wrap">
+            <span style={{ color: "#F1DFC8" }} className="font-bold text-base">
+              Pedido #{pedido.id}
+            </span>
+            <span
+              className="text-xs px-2 py-0.5 rounded font-semibold"
+              style={{ backgroundColor: color.bg, color: color.text }}
+            >
+              {color.label}
+            </span>
+            <span style={{ color: "#A6A29A" }} className="text-xs">
+              {pedido.forma_pago_codigo === "MERCADOPAGO"
+                ? "Mercado Pago"
+                : pedido.forma_pago_codigo === "MERCADOPAGO_QR"
+                ? "Mercado Pago QR"
+                : "Efectivo"}
+            </span>
+          </div>
+
+          {esOperador && (
+            <span style={{ color: "#A6A29A" }} className="text-xs">
+              Cliente ID: {pedido.usuario_id}
+            </span>
           )}
-        </tbody>
-      </table>
 
-      <div className="flex gap-2 mt-4 items-center">
-        <button
-          onClick={() => setPage((p) => Math.max(0, p - 1))}
-          disabled={page === 0}
-          className="px-3 py-1 border rounded disabled:opacity-40 hover:bg-gray-100"
-        >
-          ← Anterior
-        </button>
-        <span className="text-sm text-gray-600">Página {page + 1}</span>
-        <button
-          onClick={() => setPage((p) => p + 1)}
-          disabled={pedidos.length < PAGE_SIZE}
-          className="px-3 py-1 border rounded disabled:opacity-40 hover:bg-gray-100"
-        >
-          Siguiente →
-        </button>
+          <div className="mt-1 flex flex-col gap-1">
+            {pedido.detalles.map((d) => (
+              <div key={d.id} className="flex gap-2 text-sm">
+                <span style={{ color: "#A6A29A" }}>{d.cantidad}×</span>
+                <span style={{ color: "#F1DFC8" }}>{d.nombre}</span>
+                <span style={{ color: "#C96A3D" }} className="font-mono ml-auto">
+                  ${Number(d.subtotal).toFixed(2)}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {pedido.notas && (
+            <p style={{ color: "#A6A29A" }} className="text-xs italic mt-1">
+              "{pedido.notas}"
+            </p>
+          )}
+        </div>
+
+        {/* Columna derecha */}
+        <div className="flex flex-col items-end gap-3">
+          <div className="text-right">
+            {Number(pedido.costo_envio) > 0 && (
+              <p style={{ color: "#A6A29A" }} className="text-xs">
+                Envío: ${Number(pedido.costo_envio).toFixed(2)}
+              </p>
+            )}
+            <p style={{ color: "#C96A3D" }} className="font-bold font-mono text-xl">
+              ${Number(pedido.total).toFixed(2)}
+            </p>
+          </div>
+
+          {esCliente &&
+            pedido.estado_codigo === "PENDIENTE" &&
+            pedido.forma_pago_codigo === "MERCADOPAGO" && (
+              <button
+                onClick={onPagarMp}
+                disabled={cargando}
+                className="px-3 py-1.5 rounded text-sm font-medium disabled:opacity-50 hover:opacity-80 transition-opacity"
+                style={{ backgroundColor: "#009ee3", color: "#fff" }}
+              >
+                Pagar con Mercado Pago
+              </button>
+            )}
+
+          {transiciones.length > 0 && (
+            <div className="flex gap-2 flex-wrap justify-end">
+              {transiciones.map((estado) => (
+                <button
+                  key={estado}
+                  onClick={() => onCambiar(estado)}
+                  disabled={cargando}
+                  className="px-3 py-1.5 rounded text-sm font-medium disabled:opacity-50 hover:opacity-80 transition-opacity"
+                  style={
+                    estado === "CANCELADO"
+                      ? { backgroundColor: "#7f1d1d", color: "#fca5a5" }
+                      : { backgroundColor: "#C96A3D", color: "#F1DFC8" }
+                  }
+                >
+                  {LABEL_ACCION[estado] ?? estado}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

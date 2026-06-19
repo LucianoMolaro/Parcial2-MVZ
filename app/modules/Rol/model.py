@@ -12,4 +12,3 @@ class Rol(SQLModel, table=True):
     nombre: str = Field(max_length=50, unique=True)
     descripcion: Optional[str] = None
 
-    usuarios: list["Usuario"] = Relationship(back_populates="roles", link_model=UsuarioRol)

@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, List, Optional
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -9,11 +10,19 @@ if TYPE_CHECKING:
 
 class Categoria(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
+
+    #Atributos
     nombre: str = Field(index=True)
     descripcion: Optional[str] = None
     parent_id: Optional[int] = Field(default=None, foreign_key="categoria.id")
     habilitado: bool = Field(default=True)
 
+
+    #Audit
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc),sa_column_kwargs={"onupdate": lambda: datetime.now(timezone.utc)})
+
+    #Relaciones
     subcategorias: List["Categoria"] = Relationship(
         back_populates="parent",
         sa_relationship_kwargs={
@@ -28,7 +37,6 @@ class Categoria(SQLModel, table=True):
             "remote_side": "[Categoria.id]",
         },
     )
+    producto_categoria: list["ProductoCategoria"] = Relationship(back_populates="categoria")
+
     
-    productos: List["Producto"] = Relationship(
-        back_populates="categorias", link_model=ProductoCategoria
-    )

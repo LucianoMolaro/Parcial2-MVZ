@@ -9,12 +9,10 @@ from app.core.UnitOfWork import UnitOfWork
 from app.core.deps import get_current_active_user, get_uow, require_role
 from app.modules.Auth.service import autenticar
 from app.modules.Usuario.model import Usuario
-from app.modules.Usuario.schema import UsuarioRead
+from app.modules.Usuario.schema import UsuarioCreate, UsuarioRead, UsuarioUpdate
 from app.modules.Usuario import service as usuarioService
 
 router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
-
-
 
 @router.get("/me", response_model=UsuarioRead)
 def obtener_mi_perfil(current_user: Usuario = Depends(get_current_active_user)):
@@ -33,9 +31,6 @@ def listar_usuarios(
     
     return uow.usuarios.get_all((page-1)*7)
 
-
-
-
 @router.get("/listaUsuario/id/{usuario_id}", response_model=UsuarioRead)
 def obtener_usuario(
     usuario_id: int,
@@ -45,29 +40,26 @@ def obtener_usuario(
     return uow.usuarios.get_by_id(usuario_id)
 
 
-@router.post("/crear", response_model=UsuarioRead, status_code=201)
+@router.post("/registrar", response_model=UsuarioRead, status_code=201)
 def crear_usuario(
-    datos: Usuario,
+    datos: UsuarioCreate,
     uow: UnitOfWork = Depends(get_uow),
-    _=Depends(require_role(["ADMIN"])),
 ):
-    return uow.usuarios.add(datos)
+    return usuarioService.registrar(datos, uow)
 
 
 @router.put("/{usuario_id}/actualizar", response_model=UsuarioRead)
 def editar_usuario(
     usuario_id: int,
-    datos: Usuario,
+    datos: UsuarioUpdate,
     uow: UnitOfWork = Depends(get_uow),
     _=Depends(require_role(["ADMIN"])),
-    ):
+):
     with uow:
         user = uow.usuarios.get_by_id(usuario_id)
-
         if not user:
             raise HTTPException(404, "Usuario no encontrado")
         uow.usuarios.update(user, datos)
-
     return user
 
 
@@ -77,5 +69,8 @@ def eliminar_usuario(
     uow: UnitOfWork = Depends(get_uow),
     _=Depends(require_role(["ADMIN"])),
 ):
-    user = uow.usuarios.get_by_id(usuario_id)
-    uow.usuarios.softDelete(user)
+    with uow:
+        user = uow.usuarios.get_by_id(usuario_id)
+        if not user:
+            raise HTTPException(404, "Usuario no encontrado")
+        uow.usuarios.softDelete(user)

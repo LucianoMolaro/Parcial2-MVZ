@@ -27,19 +27,39 @@
 # def get_by_username(username: str, session = SesDep) -> Usuario | None:
 #     return session.exec(select(Usuario).where(Usuario.username == username)).first()
 
-# def create(data: UsuarioCreate, session = SesDep) -> Usuario:
-#     with UnitOfWork(session) as uow:
-#         if uow._session.exec(select(Usuario).where(Usuario.email == data.email)).first():
-#             raise HTTPException(status_code=409, detail="El email ya está en uso")
-#         if uow._session.exec(select(Usuario).where(Usuario.username == data.username)).first():
-#             raise HTTPException(status_code=409, detail="El username ya está en uso")
-#         usuario = Usuario(
-#             nombre=data.nombre, apellido=data.apellido, email=data.email,
-#             celular=data.celular, username=data.username, password=hash_password(data.password),
-#         )
-#         uow._session.add(usuario)
-#         uow._session.flush()
-#         return usuario
+from fastapi import HTTPException
+from sqlmodel import select
+
+from app.core.Security import hash_password
+from app.core.UnitOfWork import UnitOfWork
+from app.modules.Usuario.model import Usuario
+from app.modules.Usuario.schema import UsuarioCreate, UsuarioRead
+
+
+def registrar(data: UsuarioCreate, uow: UnitOfWork) -> UsuarioRead:
+    if len(data.password) < 8:
+        raise HTTPException(400, "La contraseña debe tener al menos 8 caracteres")
+    
+    password_hash = hash_password(data.password)
+    usuario = Usuario(
+        nombre=data.nombre,
+        apellido=data.apellido,
+        email=data.email,
+        celular=data.celular,
+        username=data.username,
+        password_hash=password_hash,
+    )
+    if uow.usuarios.get_by_username(data.username):
+        raise HTTPException(400, "El nombre de usuario ya existe")
+
+    if uow.usuarios.get_by_email(data.email):
+        raise HTTPException(400, "El email ya está registrado")
+    
+    with uow:
+        return uow.usuarios.add(usuario)
+
+        
+        
 
 # def update(usuario_id: int, data: UsuarioUpdate, session = SesDep) -> Usuario:
 #     with UnitOfWork(session) as uow:

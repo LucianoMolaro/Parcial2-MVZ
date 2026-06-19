@@ -10,16 +10,8 @@ router = APIRouter(prefix="/productos", tags=["Productos"])
 
 
 @router.get("/", response_model=List[ProductoRead])
-def listar_productos(
-    nombre: Annotated[Optional[str], Query(min_length=1)] = None,
-    categoria_id: Optional[int] = None,
-    solo_disponibles: bool = False,
-    offset: int = 0,
-    limit: Annotated[int, Query(le=100)] = 7,
-    uow: UnitOfWork = Depends(get_uow),
-    _=Depends(get_current_active_user),
-):
-    return producto_service.get_all(uow, nombre, categoria_id, solo_disponibles, offset, limit)
+def listar_productos(es_admin: bool = False,page: int = 1, uow: UnitOfWork= Depends(get_uow)):
+    return producto_service.get_productos(uow, es_admin, page)
 
 
 @router.get("/{producto_id}", response_model=ProductoRead)
