@@ -40,6 +40,7 @@ def _cargar(uow: UnitOfWork, producto: Producto) -> ProductoRead:
         nombre=producto.nombre,
         precio=producto.precio,
         descripcion=producto.descripcion,
+        imagen_url=producto.imagen_url,
         disponible=producto.disponible,
         stock_cantidad=producto.stock_cantidad,
         categorias=categorias,
@@ -127,6 +128,15 @@ def reactivar(uow: UnitOfWork, producto_id: int) -> ProductoRead:
         if not producto:
             raise HTTPException(status_code=404, detail="Producto no encontrado")
         producto.habilitado = True
+        return _cargar(uow, producto)
+
+
+def update_imagen(uow: UnitOfWork, producto_id: int, imagen_url: str) -> ProductoRead:
+    with uow:
+        producto = uow.productos.get_habilitado(producto_id)
+        if not producto:
+            raise HTTPException(status_code=404, detail="Producto no encontrado")
+        producto.imagen_url = imagen_url
         return _cargar(uow, producto)
 
 

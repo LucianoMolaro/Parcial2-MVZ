@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getCategorias, getIngredientes, crearProducto, editarProducto } from "../api/api";
+import { getCategorias, getIngredientes, crearProducto, editarProducto, subirImagenProducto } from "../api/api";
 import { Producto, ProductoCreate } from "../types";
 import Modal from "./Modal";
 
@@ -37,6 +37,24 @@ export default function FormularioProducto({ producto, onClose }: Props) {
         }
       : VACIO
   );
+
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [imagenPreview, setImagenPreview] = useState<string | null>(producto?.imagen_url ?? null);
+
+  const imagenMut = useMutation({
+    mutationFn: ({ id, file }: { id: number; file: File }) =>
+      subirImagenProducto(id, file),
+    onSuccess: (updated) => {
+      setImagenPreview(updated.imagen_url ?? null);
+      qc.invalidateQueries({ queryKey: ["productos"] });
+    },
+  });
+
+  function handleImagenChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !producto) return;
+    imagenMut.mutate({ id: producto.id, file });
+  }
 
   const { data: categorias = [] } = useQuery({
     queryKey: ["categorias-todas"],
@@ -202,6 +220,34 @@ export default function FormularioProducto({ producto, onClose }: Props) {
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {producto && (
+          <div>
+            <p className="text-sm font-semibold mb-1">Imagen del producto</p>
+            {imagenPreview && (
+              <img
+                src={imagenPreview}
+                alt="preview"
+                className="w-24 h-24 object-cover rounded mb-2"
+              />
+            )}
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImagenChange}
+            />
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={imagenMut.isPending}
+              className="text-sm border rounded px-3 py-1 hover:bg-gray-50 disabled:opacity-50"
+            >
+              {imagenMut.isPending ? "Subiendo..." : imagenPreview ? "Cambiar imagen" : "Subir imagen"}
+            </button>
           </div>
         )}
 

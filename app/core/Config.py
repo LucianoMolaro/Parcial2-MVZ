@@ -11,6 +11,10 @@ class Settings(BaseSettings):
     MP_PUBLIC_KEY: str = ""
     MP_BACKEND_BASE_URL: str = "http://localhost:8000"
 
+    CLOUDINARY_CLOUD_NAME: str = ""
+    CLOUDINARY_API_KEY: str = ""
+    CLOUDINARY_API_SECRET: str = ""
+
     class Config:
         env_file = ".env"
         extra = "ignore"

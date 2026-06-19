@@ -148,6 +148,18 @@ export const eliminarProducto = async (id: number): Promise<void> => {
   await check(res);
 };
 
+export const subirImagenProducto = async (id: number, file: File): Promise<Producto> => {
+  const form = new FormData();
+  form.append("imagen", file);
+  const res = await fetch(`${BASE}/productos/${id}/imagen`, {
+    method: "POST",
+    credentials: "include",
+    body: form,
+  });
+  await check(res);
+  return res.json();
+};
+
 // --- Pedidos ---
 export const getPedidos = async (params?: { offset?: number; limit?: number }): Promise<Pedido[]> => {
   const q = new URLSearchParams();

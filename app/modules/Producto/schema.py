@@ -38,6 +38,7 @@ class ProductoRead(SQLModel):
     nombre: str
     precio: float
     descripcion: Optional[str] = None
+    imagen_url: Optional[str] = None
     disponible: bool
     stock_cantidad: int
     categorias: List[CategoriaRead] = []
