@@ -11,7 +11,7 @@ class HistorialEstadoPedido(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
 
     pedido_id: int = Field(foreign_key="pedido.id", nullable=False)
-    estado_desde_id: Optional[str] = Field(foreign_key="estadopedido.codigo")
+    estado_desde_id: Optional[str] = Field(default=None, foreign_key="estadopedido.codigo")
     estado_hacia_id: str = Field(foreign_key="estadopedido.codigo", nullable=False)
     usuario_id: int = Field(foreign_key="usuario.id")
 

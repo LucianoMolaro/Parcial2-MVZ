@@ -5,6 +5,7 @@ from app.core.Security import hash_password
 from app.modules.EstadoPedido.model import EstadoPedido
 from app.modules.FormaPago.model import FormaPago
 from app.modules.Rol.model import Rol
+from app.modules.UnidadMedida.model import UnidadMedida
 from app.modules.Usuario.model import Usuario
 from app.modules.UsuarioRol.model import UsuarioRol
 
@@ -26,8 +27,9 @@ ESTADOS_PEDIDO = [
 ]
 
 FORMAS_PAGO = [
-    FormaPago(codigo="EFECTIVO",       descripcion="Pago en efectivo",   habilitado=True),
-    FormaPago(codigo="MERCADOPAGO_QR", descripcion="Mercado Pago QR",   habilitado=True),
+    FormaPago(codigo="EFECTIVO",       descripcion="Pago en efectivo",        habilitado=True),
+    FormaPago(codigo="MERCADOPAGO",    descripcion="Mercado Pago Checkout",   habilitado=True),
+    FormaPago(codigo="MERCADOPAGO_QR", descripcion="Mercado Pago QR",         habilitado=False),
 ]
 
 USUARIOS = [
@@ -35,6 +37,16 @@ USUARIOS = [
     {"username": "stock",   "nombre": "Stock",   "apellido": "Sistema", "email": "stock@store.com",   "rol": "STOCK"},
     {"username": "pedidos", "nombre": "Pedidos", "apellido": "Sistema", "email": "pedidos@store.com", "rol": "PEDIDOS"},
     {"username": "cliente", "nombre": "Cliente", "apellido": "Demo",    "email": "cliente@store.com", "rol": "CLIENT"},
+]
+
+UNIDAD_MEDIDA = [
+    UnidadMedida(nombre="Kilo", simbolo="kg", tipo="Masa"),
+    UnidadMedida(nombre="Litro", simbolo="l", tipo="Volumen"),
+    UnidadMedida(nombre="Unidad", simbolo="u", tipo="Unidad"),
+    UnidadMedida(nombre="MetroCuadrado", simbolo="m2", tipo="Area"),
+    UnidadMedida(nombre="Gramo", simbolo="g", tipo="Masa"),
+    UnidadMedida(nombre="Mililitro", simbolo="ml", tipo="Volumen"),
+    UnidadMedida(nombre="Docena", simbolo="doc", tipo="Unidad"),
 ]
 
 
@@ -63,9 +75,15 @@ def seed():
                     nombre=u["nombre"],
                     apellido=u["apellido"],
                     email=u["email"],
-                    password=hash_password("1234"),
+                    password_hash=hash_password("1234"),
                 )
                 session.add(usuario)
                 session.flush()
                 session.add(UsuarioRol(usuario_id=usuario.id, rol_codigo=u["rol"]))
+        session.commit()
+
+        for medida in UNIDAD_MEDIDA:
+            existing=session.exec(select(UnidadMedida).where(UnidadMedida.nombre == medida.nombre)).first()
+            if not existing:
+                session.add(medida)
         session.commit()

@@ -1,8 +1,9 @@
 import {
   Categoria, CategoriaCreate, CategoriaTree,
-  Ingrediente, IngredienteCreate,
+  Ingrediente, IngredienteCreate, IngredienteUpdate,
   Producto, ProductoCreate,
   Pedido,
+  UnidadMedida,
 } from "../types";
 
 const BASE = "http://localhost:8000";
@@ -63,6 +64,13 @@ export const eliminarCategoria = async (id: number): Promise<void> => {
   await check(res);
 };
 
+// --- Unidades de Medida ---
+export const getUnidadesMedida = async (): Promise<UnidadMedida[]> => {
+  const res = await fetch(`${BASE}/unidades-medida/`, opts());
+  await check(res);
+  return res.json();
+};
+
 // --- Ingredientes ---
 export const getIngredientes = async (params?: { nombre?: string; es_alergeno?: boolean; offset?: number; limit?: number }): Promise<Ingrediente[]> => {
   const q = new URLSearchParams();
@@ -81,7 +89,7 @@ export const crearIngrediente = async (data: IngredienteCreate): Promise<Ingredi
   return res.json();
 };
 
-export const editarIngrediente = async (id: number, data: IngredienteCreate): Promise<Ingrediente> => {
+export const editarIngrediente = async (id: number, data: IngredienteUpdate): Promise<Ingrediente> => {
   const res = await fetch(`${BASE}/ingredientes/${id}`, opts("PUT", data));
   await check(res);
   return res.json();
@@ -140,6 +148,18 @@ export const eliminarProducto = async (id: number): Promise<void> => {
   await check(res);
 };
 
+export const subirImagenProducto = async (id: number, file: File): Promise<Producto> => {
+  const form = new FormData();
+  form.append("imagen", file);
+  const res = await fetch(`${BASE}/productos/${id}/imagen`, {
+    method: "POST",
+    credentials: "include",
+    body: form,
+  });
+  await check(res);
+  return res.json();
+};
+
 // --- Pedidos ---
 export const getPedidos = async (params?: { offset?: number; limit?: number }): Promise<Pedido[]> => {
   const q = new URLSearchParams();
@@ -152,6 +172,13 @@ export const getPedidos = async (params?: { offset?: number; limit?: number }): 
 
 export const cambiarEstadoPedido = async (id: number, data: { estado_pedido_codigo: string; motivo?: string }): Promise<Pedido> => {
   const res = await fetch(`${BASE}/pedidos/${id}/estado`, opts("PATCH", data));
+  await check(res);
+  return res.json();
+};
+
+// --- Pagos ---
+export const crearPreferenciaMp = async (pedidoId: number): Promise<{ checkout_url: string; pedido_id: number }> => {
+  const res = await fetch(`${BASE}/pagos/preferencia/${pedidoId}`, opts("POST"));
   await check(res);
   return res.json();
 };

@@ -50,9 +50,29 @@ async def get_current_user(
 async def get_current_active_user(current_user: Annotated[Usuario, Depends(get_current_user)]) -> Usuario:
     if not current_user.habilitado:
         raise HTTPException(
-            status_code=400, 
+            status_code=400,
             detail="Cuenta de usuario desactivada")
     return current_user
+
+
+async def get_current_user_optional(
+    request: Request,
+    token_header: Optional[str] = Depends(oauth2_scheme),
+    uow: UnitOfWork = Depends(get_uow),
+) -> Optional[Usuario]:
+    token = request.cookies.get("access_token") or token_header
+    if not token:
+        return None
+    payload = decode_access_token(token)
+    if not payload:
+        return None
+    username: str | None = payload.get("sub")
+    if not username:
+        return None
+    user = uow.usuarios.get_by_username(username)
+    if not user or not user.habilitado:
+        return None
+    return user
 
 
 def require_role(allowed_roles: list[str]):

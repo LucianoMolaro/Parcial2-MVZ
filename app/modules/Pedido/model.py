@@ -2,11 +2,12 @@ from decimal import Decimal
 from typing import TYPE_CHECKING, List, Optional
 from sqlmodel import Field, Relationship, SQLModel
 
+from app.modules.EstadoPedido.model import EstadoPedido
+from app.modules.FormaPago.model import FormaPago
 if TYPE_CHECKING:
     from app.modules.DetallePedido.model import DetallePedido
     from app.modules.DireccionEntrega.model import DireccionEntrega
-    from app.modules.EstadoPedido.model import EstadoPedido
-    from app.modules.FormaPago.model import FormaPago
+
     from app.modules.HistorialEstadoPedido.model import HistorialEstadoPedido
     from app.modules.Usuario.model import Usuario
 
@@ -26,17 +27,17 @@ class Pedido(SQLModel, table=True):
     notas: Optional[str] = Field(default=None)
 
     usuario: Optional["Usuario"] = Relationship(back_populates="pedidos")
-    forma_pago: Optional["FormaPago"] = Relationship(back_populates="pedidos")
+    forma_pago: Optional["FormaPago"] = Relationship()
     direccion_entrega: Optional["DireccionEntrega"] = Relationship(back_populates="pedidos")
-    estado_pedido: Optional["EstadoPedido"] = Relationship(back_populates="pedidos")
-    detalles: List["DetallePedido"] = Relationship(
+    estado_pedido: Optional["EstadoPedido"] = Relationship()
+    detalles: list["DetallePedido"] = Relationship(
         back_populates="pedido",
         sa_relationship_kwargs={
             "cascade": "all, delete-orphan",
             "lazy": "selectin"
         }
     )
-    historial: List["HistorialEstadoPedido"] = Relationship(
+    historial: list["HistorialEstadoPedido"] = Relationship(
         back_populates="pedido",
         sa_relationship_kwargs={
             "cascade": "all, delete-orphan",

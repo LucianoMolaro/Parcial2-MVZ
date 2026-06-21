@@ -20,3 +20,18 @@ class UsuarioRead(SQLModel):
     habilitado: bool
     direcciones: list[DireccionRead]
     roles: list[Rol]
+
+class UsuarioCreate(SQLModel):
+    nombre: str
+    apellido: str
+    email: str
+    celular: str | None = None
+    username: str
+    password: str
+
+
+class UsuarioUpdate(SQLModel):
+    nombre: Optional[str] = None
+    apellido: Optional[str] = None
+    email: Optional[str] = None
+    celular: Optional[str] = None

@@ -15,17 +15,32 @@ export interface CategoriaCreate {
   parent_id?: number;
 }
 
+export interface UnidadMedida {
+  id: number;
+  nombre: string;
+  simbolo: string;
+  tipo: string;
+}
+
 export interface Ingrediente {
   id: number;
   nombre: string;
-  unidad: string;
+  unidad_medida_id: number;
+  unidad_medida_nombre: string;
+  unidad_medida_simbolo: string;
   es_alergeno: boolean;
   stock_cantidad: number;
 }
 
 export interface IngredienteCreate {
   nombre: string;
-  unidad: string;
+  unidad_medida_id: number;
+  es_alergeno: boolean;
+  stock_cantidad: number;
+}
+
+export interface IngredienteUpdate {
+  nombre: string;
   es_alergeno: boolean;
   stock_cantidad: number;
 }
@@ -49,6 +64,7 @@ export interface Producto {
   nombre: string;
   precio: number;
   descripcion?: string;
+  imagen_url?: string;
   disponible: boolean;
   stock_cantidad: number;
   categorias: Categoria[];
@@ -80,7 +96,7 @@ export interface Pedido {
   usuario_id: number;
   forma_pago_codigo: string;
   direccion_entrega_id: number;
-  estado_pedido_codigo: string;
+  estado_codigo: string;
   subtotal: number;
   costo_envio: number;
   total: number;

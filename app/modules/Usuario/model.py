@@ -23,7 +23,7 @@ class Usuario(SQLModel, table=True):
     password_hash: str = Field(max_length=60)
     habilitado: bool = Field(default=True)
 
-    roles: list["Rol"] = Relationship(back_populates="usuarios", link_model=UsuarioRol, sa_relationship_kwargs={"lazy": "selectin"})
+    roles: list["Rol"] = Relationship(link_model=UsuarioRol, sa_relationship_kwargs={"lazy": "selectin"})
     direcciones: list["DireccionEntrega"] = Relationship(back_populates="usuario", sa_relationship_kwargs={"lazy": "selectin"})
     pedidos: list["Pedido"] = Relationship(back_populates="usuario")
     historial: list["HistorialEstadoPedido"] = Relationship(back_populates="usuario")

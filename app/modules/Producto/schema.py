@@ -7,10 +7,10 @@ from app.modules.Categoria.schema import CategoriaRead
 class ProductoIngredienteRead(SQLModel):
     ingrediente_id: int
     nombre: str
-    unidad: str
+    unidad_medida_id: int
     es_alergeno: bool
     stock_cantidad: float
-    cantidad: float 
+    cantidad: float
 
 
 class ProductoCreate(SQLModel):
@@ -38,6 +38,7 @@ class ProductoRead(SQLModel):
     nombre: str
     precio: float
     descripcion: Optional[str] = None
+    imagen_url: Optional[str] = None
     disponible: bool
     stock_cantidad: int
     categorias: List[CategoriaRead] = []

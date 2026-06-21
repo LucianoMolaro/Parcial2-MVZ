@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Response
 from fastapi.security import *
 
-from app.core.Security import get_acces_token_minutes, get_acces_token_minutes
+from app.core.Security import get_acces_token_minutes
 from app.core.UnitOfWork import UnitOfWork
 from app.core.deps import *
 from app.modules.Auth import service as authService
