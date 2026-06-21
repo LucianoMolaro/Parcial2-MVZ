@@ -9,6 +9,10 @@ class IngredienteRepository(Repository[Ingrediente]):
     def __init__(self, session: Session) -> None:
         super().__init__(session, Ingrediente)
 
+    def get_by_id_locked(self, ingrediente_id: int) -> Optional[Ingrediente]:
+        stmt = select(Ingrediente).where(Ingrediente.id == ingrediente_id).with_for_update()
+        return self._session.exec(stmt).first()
+
     def get_all_filtrado(
         self,
         nombre: Optional[str],

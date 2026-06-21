@@ -29,13 +29,15 @@ export default function ProductCard({ producto }: ProductCardProps) {
         </button>
       </div>
 
-      <div className="flex-shrink-0">
-        <img
-          src=""
-          alt={producto.nombre}
-          className="w-32 h-32 rounded object-cover"
-        />
-      </div>
+      {producto.imagen_url && (
+        <div className="flex-shrink-0">
+          <img
+            src={producto.imagen_url}
+            alt={producto.nombre}
+            className="w-32 h-32 rounded object-cover"
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -64,6 +64,7 @@ export interface Producto {
   nombre: string;
   precio: number;
   descripcion?: string;
+  imagen_url?: string;
   disponible: boolean;
   stock_cantidad: number;
   categorias: Categoria[];

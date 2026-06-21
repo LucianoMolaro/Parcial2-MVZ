@@ -19,6 +19,7 @@ class Producto(SQLModel, table=True):
     nombre: str
     precio: float
     descripcion: Optional[str] = None
+    imagen_url: Optional[str] = None
     disponible: bool = Field(default=True)
     stock_cantidad: int = Field(default=0)
     habilitado: bool = Field(default=True)

@@ -1,12 +1,33 @@
-from fastapi import APIRouter, Depends, Query, Request
+import hashlib
+import hmac
+import logging
 
+from fastapi import APIRouter, Depends, Query, Request, HTTPException
+
+from app.core.Config import settings
 from app.core.deps import get_current_active_user, get_uow
 from app.core.UnitOfWork import UnitOfWork
 from app.modules.Pago import service as pago_service
 from app.modules.Pago.schema import PreferenciaResponse, PagoRead
 from app.modules.Usuario.model import Usuario
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/pagos", tags=["Pagos"])
+
+
+def _verify_mp_signature(x_signature: str, x_request_id: str, data_id: str) -> bool:
+    try:
+        parts = dict(p.split("=", 1) for p in x_signature.split(","))
+        ts = parts.get("ts", "")
+        v1 = parts.get("v1", "")
+        manifest = f"id:{data_id};request-id:{x_request_id};ts:{ts};"
+        expected = hmac.new(
+            settings.MP_WEBHOOK_SECRET.encode(), manifest.encode(), hashlib.sha256
+        ).hexdigest()
+        return hmac.compare_digest(expected, v1)
+    except Exception:
+        return False
 
 
 @router.post("/preferencia/{pedido_id}", response_model=PreferenciaResponse)
@@ -25,18 +46,30 @@ async def webhook(
     id: str = Query(default=""),
     uow: UnitOfWork = Depends(get_uow),
 ):
-    # MP envía IPN como GET/POST con ?topic=payment&id=PAYMENT_ID
-    # o como POST con body JSON { "type": "payment", "data": { "id": "123" } }
+    # IPN format: ?topic=payment&id=PAYMENT_ID (sin firma)
     if topic and id:
         pago_service.procesar_webhook(uow, topic, id)
         return {"status": "ok"}
 
+    # JSON webhook format: verifica firma si MP_WEBHOOK_SECRET está configurado
     try:
         body = await request.json()
         event_type = body.get("type", "")
         event_id = str(body.get("data", {}).get("id", ""))
-        if event_type and event_id:
-            pago_service.procesar_webhook(uow, event_type.replace(".", "_").split("_")[0], event_id)
+
+        if not event_type or not event_id:
+            return {"status": "ok"}
+
+        if settings.MP_WEBHOOK_SECRET:
+            x_sig = request.headers.get("x-signature", "")
+            x_req_id = request.headers.get("x-request-id", "")
+            if not x_sig or not _verify_mp_signature(x_sig, x_req_id, event_id):
+                logger.warning("Webhook MP rechazado: firma inválida")
+                raise HTTPException(status_code=400, detail="Firma inválida")
+
+        pago_service.procesar_webhook(uow, event_type.replace(".", "_").split("_")[0], event_id)
+    except HTTPException:
+        raise
     except Exception:
         pass
 
