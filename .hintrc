@@ -4,6 +4,16 @@
   ],
   "hints": {
     "axe/name-role-value": "off",
-    "no-inline-styles": "off"
+    "no-inline-styles": "off",
+    "axe/forms": "off",
+    "compat-api/css": [
+      "default",
+      {
+        "ignore": [
+          "scrollbar-width",
+          "scrollbar-width: none"
+        ]
+      }
+    ]
   }
 }

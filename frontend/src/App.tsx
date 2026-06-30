@@ -1,112 +1,58 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-<<<<<<< HEAD
-// import Navbar from "./components/Navbar";
-import LoginPage from "./pages/LoginPage";
-// import CategoriasPage from "./pages/CategoriasPage";
-import IngredientesPage from "./pages/IngredientesPage";
-=======
-import LoginPage from "./pages/LoginPage";
->>>>>>> 963d90eee5cc139a2bc81ca319867c5edb30dfbb
-import ProductosPage from "./pages/ProductosPage";
+import { useEffect } from "react";
+import PaginaLogin from "./pages/PaginaLogin";
+import PaginaCarrito from "./pages/PaginaCarrito";
+import PaginaPedidos from "./pages/PaginaPedidos";
+import PaginaDetallePedido from "./pages/PaginaDetallePedido";
+import PaginaDirecciones from "./pages/PaginaDirecciones";
+import PaginaIngredientes from "./pages/PaginaIngredientes";
+import PaginaCategorias from "./pages/PaginaCategorias";
+import PaginaDashboard from "./pages/PaginaDashboard";
+import PaginaCatalogo from "./pages/ProductosPage";
+import PrivateRoute from "./PrivateRoute";
+import PaginaRegistro from "./pages/PaginaRegistro";
+import PaginaProductosAdmin from "./pages/PaginaProductosAdmin";
+import PaginaIngredientesAdmin from "./pages/PaginaIngredientesAdmin";
+import PaginaUsuariosAdmin from "./pages/PaginaUsuariosAdmin";
 import { useAuthUser } from "./context/AuthContext";
-import ListaUsuarios from "./pages/ListaUsuarios";
-import PedidosPage from "./pages/PedidosPage";
-<<<<<<< HEAD
-// import ClientePage from "./pages/ClientePage";
-// import HomePage from "./pages/HomePage";
+import { useWebSocket } from "./context/WebSocketContext";
 
-import { useAuthUser } from "./context/AuthContext";
-import ListaUsuarios from "./pages/listaUsuarios";
-
-
-export default function App() {
-  const { user } = useAuthUser()
-  const roles = user?.roles.map(rol => rol.codigo) || []
-  const logeado = !!user
-
-  return (
-      <BrowserRouter>
-        <Routes>
-
-          <Route path="/listaUsuarios" element={logeado && roles.includes("ADMIN") ? <ListaUsuarios /> : <LoginPage />} />
-
-          <Route path="/ingredientes" element={logeado && (roles.includes("STOCK") || roles.includes("ADMIN")) ? <IngredientesPage /> : <LoginPage />} />
-
-          <Route path="/pedidos" element={logeado && (roles.includes("PEDIDOS") || roles.includes("ADMIN")) ? <PedidosPage /> : <LoginPage />} />
-
-          <Route path="/productos" element={logeado && (roles.includes("CLIENT") || roles.includes("ADMIN")) ? <ProductosPage /> : <LoginPage />} />
-          
-          <Route path="*" element={<LoginPage />} />
-        </Routes>
-      </BrowserRouter>
-=======
-import IngredientesPage from "./pages/IngredientesPage";
-import ClientePage from "./pages/ClientePage";
-import CategoriasPage from "./pages/CategoriasPage";
 
 export default function App() {
   const { user } = useAuthUser();
-  const roles = user?.roles.map((rol) => rol.codigo) || [];
-  const logeado = !!user;
+  const { connect, disconnect, joinRoom, status } = useWebSocket();
+
+  useEffect(() => {
+    if (user) {
+      connect(`ws://localhost:8000/ws/${user.id}`, String(user.id));
+    } else {
+      disconnect();
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (status !== "connected" || !user) return;
+    joinRoom(`pedido_${user.id}`);
+    const esAdmin = user.roles?.some(r => r.codigo === "ADMIN" || r.codigo === "PEDIDOS");
+    if (esAdmin) joinRoom("pedidos_admin");
+  }, [status, user?.id]);
 
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<ProductosPage />} />
-
-        <Route path="/login" element={<LoginPage />} />
-
-        <Route
-          path="/usuarios"
-          element={logeado && roles.includes("ADMIN") ? <ListaUsuarios /> : <ProductosPage />}
-        />
-
-        <Route
-          path="/ingredientes"
-          element={
-            logeado && (roles.includes("STOCK") || roles.includes("ADMIN"))
-              ? <IngredientesPage />
-              : <LoginPage />
-          }
-        />
-
-        <Route
-          path="/pedidos"
-          element={
-            logeado && (roles.includes("PEDIDOS") || roles.includes("ADMIN"))
-              ? <PedidosPage />
-              : <LoginPage />
-          }
-        />
-
-        <Route
-          path="/productos"
-          element={
-            logeado && (roles.includes("CLIENT") || roles.includes("ADMIN"))
-              ? <ProductosPage />
-              : <LoginPage />
-          }
-        />
-
-        <Route
-          path="/cliente"
-          element={
-            logeado && (roles.includes("CLIENT") || roles.includes("ADMIN"))
-              ? <ClientePage />
-              : <LoginPage />
-          }
-        />
-
-        <Route
-          path="/categorias"
-          element={
-            logeado && roles.includes("ADMIN")
-              ? <CategoriasPage />
-              : <ProductosPage />
-          }
-        />
+        <Route path="/" element= { <PaginaCatalogo/> }/>
+        <Route path="/login" element= { <PaginaLogin/> }/>
+        <Route path="/registro" element= { <PaginaRegistro/> }/>
+        <Route path="/carrito" element= { <PrivateRoute rol={["CLIENT"]}><PaginaCarrito/></PrivateRoute>}/>
+        <Route path="/pedidos" element= { <PrivateRoute rol={["CLIENTE", "PEDIDOS", "ADMIN"]}><PaginaPedidos/></PrivateRoute> }/>
+        <Route path="/pedidos/:id" element= { <PrivateRoute rol={["CLIENTE", "PEDIDOS"]}><PaginaDetallePedido/></PrivateRoute> }/>
+        <Route path="/direcciones" element= {  <PrivateRoute rol={["CLIENTE"]}><PaginaDirecciones/></PrivateRoute> }/>
+        <Route path="/admin/ingredientes" element= {  <PrivateRoute rol={["ADMIN", "STOCK"]}><PaginaIngredientesAdmin/></PrivateRoute>  }/>
+        <Route path="/admin/categorias" element= { <PrivateRoute rol={["ADMIN"]}><PaginaCategorias/></PrivateRoute>  }/>
+        <Route path="/admin/dashboard" element= { <PrivateRoute rol={["ADMIN"]}><PaginaDashboard/></PrivateRoute> }/>
+        <Route path="/admin/productos" element= { <PrivateRoute rol={["ADMIN"]}><PaginaProductosAdmin/></PrivateRoute> }/>
+        <Route path="/admin/usuarios" element= { <PrivateRoute rol={["ADMIN"]}><PaginaUsuariosAdmin/></PrivateRoute> }/>
       </Routes>
     </BrowserRouter>
->>>>>>> 963d90eee5cc139a2bc81ca319867c5edb30dfbb
   );
 }

@@ -1,814 +1,291 @@
-<<<<<<< HEAD
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 
-interface Categoria {
-    id: number;
-    nombre: string;
+interface CategoriaOption { id: number; nombre: string; }
+interface IngredienteOption { id: number; nombre: string; unidad_medida_id: number; }
+interface CategoriaSeleccionada { categoriaId: number; nombre: string; }
+interface IngredienteSeleccionado { ingredienteId: number; nombre: string; cantidad: number; }
+
+interface ProductoEditar {
+  id: number;
+  nombre: string;
+  precio: number;
+  descripcion?: string;
+  disponible: boolean;
+  stock_cantidad: number;
+  categorias?: { id: number; nombre: string }[];
+  ingredientes?: { ingrediente_id: number; nombre: string; cantidad: number }[];
 }
 
-interface Ingrediente {
-    id: number;
-    nombre: string;
-}
-
-interface ProductoCategoriaForm {
-    categoriaId: number;
-    esPrincipal: boolean;
-}
-
-interface ProductoIngredienteForm {
-    ingredienteId: number;
-    cantidad: number;
-    esRemovible: boolean;
-}
-
-export default function ProductoForm() {
-    const [nombre, setNombre] = useState("");
-    const [precio, setPrecio] = useState<number>(0);
-    const [descripcion, setDescripcion] = useState("");
-    const [stockCantidad, setStockCantidad] = useState<number>(0);
-    const [disponible, setDisponible] = useState(true);
-    const [habilitado, setHabilitado] = useState(true);
-
-    const [categorias, setCategorias] = useState<Categoria[]>([]);
-    const [ingredientes, setIngredientes] = useState<Ingrediente[]>([]);
-
-    const [productoCategorias, setProductoCategorias] = useState<
-        ProductoCategoriaForm[]
-    >([]);
-
-    const [productoIngredientes, setProductoIngredientes] = useState<
-        ProductoIngredienteForm[]
-    >([]);
-
-    useEffect(() => {
-        const cargarDatos = async () => {
-            try {
-                const [categoriasRes, ingredientesRes] =
-                    await Promise.all([
-                        fetch("/api/categorias"),
-                        fetch("/api/ingredientes"),
-                    ]);
-
-                const categoriasData =
-                    await categoriasRes.json();
-
-                const ingredientesData =
-                    await ingredientesRes.json();
-
-                setCategorias(categoriasData);
-                setIngredientes(ingredientesData);
-            } catch (error) {
-                console.error(error);
-            }
-        };
-
-        cargarDatos();
-    }, []);
-
-    const agregarCategoria = () => {
-        setProductoCategorias((prev) => [
-            ...prev,
-            {
-                categoriaId: 0,
-                esPrincipal: prev.length === 0,
-            },
-        ]);
-    };
-
-    const eliminarCategoria = (index: number) => {
-        setProductoCategorias((prev) =>
-            prev.filter((_, i) => i !== index)
-        );
-    };
-
-    const agregarIngrediente = () => {
-        setProductoIngredientes((prev) => [
-            ...prev,
-            {
-                ingredienteId: 0,
-                cantidad: 0,
-                esRemovible: false,
-            },
-        ]);
-    };
-
-    const eliminarIngrediente = (index: number) => {
-        setProductoIngredientes((prev) =>
-            prev.filter((_, i) => i !== index)
-        );
-    };
-
-    const handleSubmit = async (
-        e: React.FormEvent<HTMLFormElement>
-    ) => {
-        e.preventDefault();
-
-        const payload = {
-            nombre,
-            precio,
-            descripcion: descripcion || null,
-            stock_cantidad: stockCantidad,
-            disponible,
-            habilitado,
-            categorias: productoCategorias,
-            ingredientes: productoIngredientes,
-        };
-
-        try {
-            const response = await fetch("/api/productos", {
-                method: "POST",
-                headers: {
-                    "Content-Type":
-                        "application/json",
-                },
-                body: JSON.stringify(payload),
-            });
-
-            if (!response.ok) {
-                throw new Error(
-                    "Error al crear producto"
-                );
-            }
-
-            console.log("Producto creado");
-
-            setNombre("");
-            setPrecio(0);
-            setDescripcion("");
-            setStockCantidad(0);
-            setDisponible(true);
-            setHabilitado(true);
-            setProductoCategorias([]);
-            setProductoIngredientes([]);
-        } catch (error) {
-            console.error(error);
-        }
-    };
-
-    return (
-        <div className="flex justify-center p-6">
-            <form
-                onSubmit={handleSubmit}
-                className="w-full max-w-5xl rounded-xl border border-[#A6A29A]/20 bg-[#252B31] p-6 shadow-lg"
-            >
-                <h2 className="mb-6 text-2xl font-bold text-[#F1DFC8]">
-                    Nuevo Producto
-                </h2>
-
-                {/* Datos básicos */}
-                <div className="grid gap-4 md:grid-cols-2">
-                    <div>
-                        <label className="mb-2 block text-[#F1DFC8]">
-                            Nombre
-                        </label>
-
-                        <input
-                            type="text"
-                            required
-                            value={nombre}
-                            onChange={(e) =>
-                                setNombre(
-                                    e.target.value
-                                )
-                            }
-                            className="w-full rounded-lg border border-[#A6A29A]/30 bg-[#1E2328] px-3 py-2 text-[#F1DFC8] focus:border-[#C96A3D] focus:outline-none"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="mb-2 block text-[#F1DFC8]">
-                            Precio
-                        </label>
-
-                        <input
-                            type="number"
-                            required
-                            min={0}
-                            step={0.01}
-                            value={precio}
-                            onChange={(e) =>
-                                setPrecio(
-                                    Number(
-                                        e.target.value
-                                    )
-                                )
-                            }
-                            className="w-full rounded-lg border border-[#A6A29A]/30 bg-[#1E2328] px-3 py-2 text-[#F1DFC8] focus:border-[#C96A3D] focus:outline-none"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="mb-2 block text-[#F1DFC8]">
-                            Stock inicial
-                        </label>
-
-                        <input
-                            type="number"
-                            min={0}
-                            value={stockCantidad}
-                            onChange={(e) =>
-                                setStockCantidad(
-                                    Number(
-                                        e.target.value
-                                    )
-                                )
-                            }
-                            className="w-full rounded-lg border border-[#A6A29A]/30 bg-[#1E2328] px-3 py-2 text-[#F1DFC8] focus:border-[#C96A3D] focus:outline-none"
-                        />
-                    </div>
-
-                    <div className="flex items-end gap-6">
-                        <label className="flex items-center gap-2 text-[#F1DFC8]">
-                            <input
-                                type="checkbox"
-                                checked={disponible}
-                                onChange={(e) =>
-                                    setDisponible(
-                                        e.target.checked
-                                    )
-                                }
-                                className="accent-[#C96A3D]"
-                            />
-                            Disponible
-                        </label>
-
-                        <label className="flex items-center gap-2 text-[#F1DFC8]">
-                            <input
-                                type="checkbox"
-                                checked={habilitado}
-                                onChange={(e) =>
-                                    setHabilitado(
-                                        e.target.checked
-                                    )
-                                }
-                                className="accent-[#C96A3D]"
-                            />
-                            Habilitado
-                        </label>
-                    </div>
-                </div>
-
-                <div className="mt-4">
-                    <label className="mb-2 block text-[#F1DFC8]">
-                        Descripción
-                    </label>
-
-                    <textarea
-                        rows={3}
-                        value={descripcion}
-                        onChange={(e) =>
-                            setDescripcion(
-                                e.target.value
-                            )
-                        }
-                        className="w-full rounded-lg border border-[#A6A29A]/30 bg-[#1E2328] px-3 py-2 text-[#F1DFC8] focus:border-[#C96A3D] focus:outline-none"
-                    />
-                </div>
-
-                {/* Categorías */}
-                <div className="mt-8">
-                    <div className="mb-3 flex items-center justify-between">
-                        <h3 className="text-lg font-semibold text-[#F1DFC8]">
-                            Categorías
-                        </h3>
-
-                        <button
-                            type="button"
-                            onClick={agregarCategoria}
-                            className="rounded-lg bg-[#2F5D62] px-3 py-2 text-white hover:bg-[#23494d]"
-                        >
-                            + Agregar categoría
-                        </button>
-                    </div>
-
-                    <div className="space-y-3">
-                        {productoCategorias.map(
-                            (categoria, index) => (
-                                <div
-                                    key={index}
-                                    className="grid gap-3 md:grid-cols-[1fr_auto_auto]"
-                                >
-                                    <select
-                                        value={
-                                            categoria.categoriaId
-                                        }
-                                        onChange={(
-                                            e
-                                        ) => {
-                                            const copia =
-                                                [
-                                                    ...productoCategorias,
-                                                ];
-
-                                            copia[
-                                                index
-                                            ].categoriaId =
-                                                Number(
-                                                    e
-                                                        .target
-                                                        .value
-                                                );
-
-                                            setProductoCategorias(
-                                                copia
-                                            );
-                                        }}
-                                        className="rounded-lg border border-[#A6A29A]/30 bg-[#1E2328] px-3 py-2 text-[#F1DFC8]"
-                                    >
-                                        <option value={0}>
-                                            Seleccionar
-                                            categoría
-                                        </option>
-
-                                        {categorias.map(
-                                            (c) => (
-                                                <option
-                                                    key={
-                                                        c.id
-                                                    }
-                                                    value={
-                                                        c.id
-                                                    }
-                                                >
-                                                    {
-                                                        c.nombre
-                                                    }
-                                                </option>
-                                            )
-                                        )}
-                                    </select>
-
-                                    <label className="flex items-center gap-2 text-[#F1DFC8]">
-                                        <input
-                                            type="radio"
-                                            name="categoriaPrincipal"
-                                            checked={
-                                                categoria.esPrincipal
-                                            }
-                                            onChange={() =>
-                                                setProductoCategorias(
-                                                    productoCategorias.map(
-                                                        (
-                                                            c,
-                                                            i
-                                                        ) => ({
-                                                            ...c,
-                                                            esPrincipal:
-                                                                i ===
-                                                                index,
-                                                        })
-                                                    )
-                                                )
-                                            }
-                                        />
-                                        Principal
-                                    </label>
-
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            eliminarCategoria(
-                                                index
-                                            )
-                                        }
-                                        className="rounded-lg bg-red-600 px-3 py-2 text-white"
-                                    >
-                                        X
-                                    </button>
-                                </div>
-                            )
-                        )}
-                    </div>
-                </div>
-
-                {/* Ingredientes */}
-                <div className="mt-8">
-                    <div className="mb-3 flex items-center justify-between">
-                        <h3 className="text-lg font-semibold text-[#F1DFC8]">
-                            Ingredientes
-                        </h3>
-
-                        <button
-                            type="button"
-                            onClick={agregarIngrediente}
-                            className="rounded-lg bg-[#2F5D62] px-3 py-2 text-white hover:bg-[#23494d]"
-                        >
-                            + Agregar ingrediente
-                        </button>
-                    </div>
-
-                    <div className="space-y-3">
-                        {productoIngredientes.map(
-                            (
-                                ingrediente,
-                                index
-                            ) => (
-                                <div
-                                    key={index}
-                                    className="grid gap-3 md:grid-cols-[2fr_1fr_auto_auto]"
-                                >
-                                    <select
-                                        value={
-                                            ingrediente.ingredienteId
-                                        }
-                                        onChange={(
-                                            e
-                                        ) => {
-                                            const copia =
-                                                [
-                                                    ...productoIngredientes,
-                                                ];
-
-                                            copia[
-                                                index
-                                            ].ingredienteId =
-                                                Number(
-                                                    e
-                                                        .target
-                                                        .value
-                                                );
-
-                                            setProductoIngredientes(
-                                                copia
-                                            );
-                                        }}
-                                        className="rounded-lg border border-[#A6A29A]/30 bg-[#1E2328] px-3 py-2 text-[#F1DFC8]"
-                                    >
-                                        <option value={0}>
-                                            Seleccionar
-                                            ingrediente
-                                        </option>
-
-                                        {ingredientes.map(
-                                            (i) => (
-                                                <option
-                                                    key={
-                                                        i.id
-                                                    }
-                                                    value={
-                                                        i.id
-                                                    }
-                                                >
-                                                    {
-                                                        i.nombre
-                                                    }
-                                                </option>
-                                            )
-                                        )}
-                                    </select>
-
-                                    <input
-                                        type="number"
-                                        min={0}
-                                        step={0.01}
-                                        value={
-                                            ingrediente.cantidad
-                                        }
-                                        onChange={(
-                                            e
-                                        ) => {
-                                            const copia =
-                                                [
-                                                    ...productoIngredientes,
-                                                ];
-
-                                            copia[
-                                                index
-                                            ].cantidad =
-                                                Number(
-                                                    e
-                                                        .target
-                                                        .value
-                                                );
-
-                                            setProductoIngredientes(
-                                                copia
-                                            );
-                                        }}
-                                        placeholder="Cantidad"
-                                        className="rounded-lg border border-[#A6A29A]/30 bg-[#1E2328] px-3 py-2 text-[#F1DFC8]"
-                                    />
-
-                                    <label className="flex items-center gap-2 text-[#F1DFC8]">
-                                        <input
-                                            type="checkbox"
-                                            checked={
-                                                ingrediente.esRemovible
-                                            }
-                                            onChange={(
-                                                e
-                                            ) => {
-                                                const copia =
-                                                    [
-                                                        ...productoIngredientes,
-                                                    ];
-
-                                                copia[
-                                                    index
-                                                ].esRemovible =
-                                                    e.target.checked;
-
-                                                setProductoIngredientes(
-                                                    copia
-                                                );
-                                            }}
-                                        />
-                                        Removible
-                                    </label>
-
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            eliminarIngrediente(
-                                                index
-                                            )
-                                        }
-                                        className="rounded-lg bg-red-600 px-3 py-2 text-white"
-                                    >
-                                        X
-                                    </button>
-                                </div>
-                            )
-                        )}
-                    </div>
-                </div>
-
-                <div className="mt-8 flex justify-end">
-                    <button
-                        type="submit"
-                        className="rounded-lg bg-[#C96A3D] px-6 py-3 font-medium text-white transition hover:bg-[#2F5D62]"
-                    >
-                        Crear Producto
-                    </button>
-                </div>
-            </form>
-        </div>
-    );
-}
-=======
-import { useState, useRef } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getCategorias, getIngredientes, crearProducto, editarProducto, subirImagenProducto } from "../api/api";
-import { Producto, ProductoCreate } from "../types";
-import Modal from "./Modal";
-
-interface Props {
-  producto?: Producto | null;
+interface ModalProps {
+  isOpen: boolean;
   onClose: () => void;
+  productoEditar?: ProductoEditar;
 }
 
-const VACIO: ProductoCreate = {
-  nombre: "",
-  precio: 0,
-  descripcion: "",
-  disponible: true,
-  stock_cantidad: 0,
-  categoria_ids: [],
-  ingredientes: [],
-};
+export default function ModalNuevoProducto({ isOpen, onClose, productoEditar }: ModalProps) {
+  const [nombre, setNombre] = useState('');
+  const [precio, setPrecio] = useState<number | ''>('');
+  const [descripcion, setDescripcion] = useState('');
+  const [stockCantidad, setStockCantidad] = useState<number>(0);
+  const [habilitado, setHabilitado] = useState(true);
+  const [disponible, setDisponible] = useState(true);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-export default function FormularioProducto({ producto, onClose }: Props) {
-  const qc = useQueryClient();
-  const [form, setForm] = useState<ProductoCreate>(
-    producto
-      ? {
-          nombre: producto.nombre,
-          precio: producto.precio,
-          descripcion: producto.descripcion ?? "",
-          disponible: producto.disponible,
-          stock_cantidad: producto.stock_cantidad,
-          categoria_ids: producto.categorias.map((c) => c.id),
-          ingredientes: producto.ingredientes.map((i) => ({
-            ingrediente_id: i.ingrediente_id,
-            cantidad: i.cantidad,
-          })),
-        }
-      : VACIO
-  );
+  const [categoriasDisponibles, setCategoriasDisponibles] = useState<CategoriaOption[]>([]);
+  const [ingredientesDisponibles, setIngredientesDisponibles] = useState<IngredienteOption[]>([]);
+  const [categoriasSeleccionadas, setCategoriasSeleccionadas] = useState<CategoriaSeleccionada[]>([]);
+  const [ingredientesSeleccionados, setIngredientesSeleccionados] = useState<IngredienteSeleccionado[]>([]);
 
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [imagenPreview, setImagenPreview] = useState<string | null>(producto?.imagen_url ?? null);
+  const [tempCategoriaId, setTempCategoriaId] = useState('');
+  const [tempIngredienteId, setTempIngredienteId] = useState('');
+  const [tempCantidadIngrediente, setTempCantidadIngrediente] = useState<number | ''>('');
 
-  const imagenMut = useMutation({
-    mutationFn: ({ id, file }: { id: number; file: File }) =>
-      subirImagenProducto(id, file),
-    onSuccess: (updated) => {
-      setImagenPreview(updated.imagen_url ?? null);
-      qc.invalidateQueries({ queryKey: ["productos"] });
-    },
-  });
+  useEffect(() => {
+    fetch('http://localhost:8000/categorias/', { credentials: 'include' })
+      .then(r => r.json()).then(setCategoriasDisponibles);
+    fetch('http://localhost:8000/ingredientes/', { credentials: 'include' })
+      .then(r => r.json()).then(setIngredientesDisponibles);
+  }, []);
 
-  function handleImagenChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file || !producto) return;
-    imagenMut.mutate({ id: producto.id, file });
-  }
+  useEffect(() => {
+    if (productoEditar) {
+      setNombre(productoEditar.nombre);
+      setPrecio(productoEditar.precio);
+      setDescripcion(productoEditar.descripcion ?? '');
+      setStockCantidad(productoEditar.stock_cantidad);
+      setDisponible(productoEditar.disponible);
+      setCategoriasSeleccionadas((productoEditar.categorias ?? []).map(c => ({ categoriaId: c.id, nombre: c.nombre })));
+      setIngredientesSeleccionados((productoEditar.ingredientes ?? []).map(i => ({ ingredienteId: i.ingrediente_id, nombre: i.nombre, cantidad: i.cantidad })));
+    } else {
+      setNombre(''); setPrecio(''); setDescripcion(''); setStockCantidad(0);
+      setDisponible(true); setHabilitado(true);
+      setCategoriasSeleccionadas([]); setIngredientesSeleccionados([]);
+      setPreviewUrl(null);
+    }
+  }, [productoEditar]);
 
-  const { data: categorias = [] } = useQuery({
-    queryKey: ["categorias-todas"],
-    queryFn: () => getCategorias({ limit: 100 }),
-  });
+  if (!isOpen) return null;
 
-  const { data: ingredientes = [] } = useQuery({
-    queryKey: ["ingredientes-todos"],
-    queryFn: () => getIngredientes({ limit: 100 }),
-  });
+  const manejarImagen = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const archivo = e.target.files?.[0];
+    if (archivo) setPreviewUrl(URL.createObjectURL(archivo));
+  };
 
-  const crearMut = useMutation({
-    mutationFn: crearProducto,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["productos"] });
-      onClose();
-    },
-  });
+  const agregarCategoriaLista = () => {
+    if (!tempCategoriaId) return;
+    const cat = categoriasDisponibles.find(c => c.id === Number(tempCategoriaId));
+    if (cat && !categoriasSeleccionadas.some(c => c.categoriaId === cat.id)) {
+      setCategoriasSeleccionadas([...categoriasSeleccionadas, { categoriaId: cat.id, nombre: cat.nombre }]);
+      setTempCategoriaId('');
+    }
+  };
 
-  const editarMut = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: ProductoCreate }) =>
-      editarProducto(id, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["productos"] });
-      onClose();
-    },
-  });
+  const agregarIngredienteLista = () => {
+    if (!tempIngredienteId || !tempCantidadIngrediente) return;
+    const ing = ingredientesDisponibles.find(i => i.id === Number(tempIngredienteId));
+    if (ing && !ingredientesSeleccionados.some(i => i.ingredienteId === ing.id)) {
+      setIngredientesSeleccionados([...ingredientesSeleccionados, {
+        ingredienteId: ing.id,
+        nombre: ing.nombre,
+        cantidad: Number(tempCantidadIngrediente),
+      }]);
+      setTempIngredienteId('');
+      setTempCantidadIngrediente('');
+    }
+  };
 
-  function toggleCategoria(id: number) {
-    setForm((f) => ({
-      ...f,
-      categoria_ids: f.categoria_ids.includes(id)
-        ? f.categoria_ids.filter((c) => c !== id)
-        : [...f.categoria_ids, id],
-    }));
-  }
+  const manejarEnvioFormulario = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  function setIngredienteCantidad(ingrediente_id: number, raw: string) {
-    const cantidad = parseFloat(raw) || 0;
-    setForm((f) => {
-      const existe = f.ingredientes.find((i) => i.ingrediente_id === ingrediente_id);
-      if (cantidad <= 0) {
-        return { ...f, ingredientes: f.ingredientes.filter((i) => i.ingrediente_id !== ingrediente_id) };
-      }
-      if (existe) {
-        return {
-          ...f,
-          ingredientes: f.ingredientes.map((i) =>
-            i.ingrediente_id === ingrediente_id ? { ...i, cantidad } : i
-          ),
-        };
-      }
-      return { ...f, ingredientes: [...f.ingredientes, { ingrediente_id, cantidad }] };
-    });
-  }
-
-  function handleSubmit() {
-    if (!form.nombre.trim()) return alert("El nombre es obligatorio");
-    if (form.precio <= 0) return alert("El precio debe ser mayor a 0");
-    const data: ProductoCreate = {
-      ...form,
-      descripcion: form.descripcion?.trim() || undefined,
+    const payload = {
+      nombre,
+      precio: Number(precio),
+      descripcion: descripcion || null,
+      disponible,
+      stock_cantidad: stockCantidad,
+      categoria_ids: categoriasSeleccionadas.map(c => c.categoriaId),
+      ingredientes: ingredientesSeleccionados.map(i => ({ ingrediente_id: i.ingredienteId, cantidad: i.cantidad })),
     };
-    if (producto) editarMut.mutate({ id: producto.id, data });
-    else crearMut.mutate(data);
-  }
 
-  const pending = crearMut.isPending || editarMut.isPending;
+    const url = productoEditar
+      ? `http://localhost:8000/productos/${productoEditar.id}`
+      : 'http://localhost:8000/productos/';
+    const method = productoEditar ? 'PUT' : 'POST';
+
+    const res = await fetch(url, {
+      method,
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (res.ok) onClose();
+  };
 
   return (
-    <Modal titulo={producto ? "Editar Producto" : "Nuevo Producto"} onClose={onClose}>
-      <div className="flex flex-col gap-3 max-h-[70vh] overflow-y-auto pr-1">
-        <input
-          className="border rounded px-3 py-2"
-          placeholder="Nombre *"
-          value={form.nombre}
-          onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-        />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Capa de desenfoque de fondo */}
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-xs" onClick={onClose} />
 
-        <input
-          className="border rounded px-3 py-2"
-          type="number"
-          placeholder="Precio *"
-          min={0}
-          step={0.01}
-          value={form.precio || ""}
-          onChange={(e) => setForm({ ...form, precio: parseFloat(e.target.value) || 0 })}
-        />
+      {/* Ventana Modal (Configurada con scroll vertical interno sutil) */}
+      <div className="relative w-full max-w-md bg-white rounded-2xl border border-gray-100 shadow-xl p-5 space-y-4 z-10 max-h-[90vh] overflow-y-auto scrollbar-hide font-sans antialiased">
 
-        <textarea
-          className="border rounded px-3 py-2"
-          placeholder="Descripción"
-          rows={2}
-          value={form.descripcion ?? ""}
-          onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
-        />
-
-        <div className="flex items-center gap-4">
-          <div className="flex-1">
-            <label className="text-xs text-gray-500 block mb-1">Stock inicial</label>
-            <input
-              type="number"
-              className="border rounded px-3 py-2 w-full"
-              min={0}
-              step={0.01}
-              value={form.stock_cantidad || ""}
-              onChange={(e) => setForm({ ...form, stock_cantidad: parseFloat(e.target.value) || 0 })}
-            />
+        {/* Cabecera */}
+        <div className="flex items-start justify-between border-b border-gray-50 pb-2">
+          <div>
+            <h2 className="text-base font-black text-[#1E1E24] tracking-tight">
+              {productoEditar ? 'Editar' : 'Nuevo'} <span className="text-[#E63946]">Producto Menú</span>
+            </h2>
           </div>
-          <label className="flex items-center gap-2 text-sm mt-4 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.disponible}
-              onChange={(e) => setForm({ ...form, disponible: e.target.checked })}
-            />
-            Disponible
-          </label>
+          <button onClick={onClose} className="text-gray-400 hover:text-[#E63946] font-black text-sm p-1 cursor-pointer">✕</button>
         </div>
 
-        {categorias.length > 0 && (
-          <div>
-            <p className="text-sm font-semibold mb-1">Categorías</p>
-            <div className="flex flex-wrap gap-2">
-              {categorias.map((c) => (
-                <label
-                  key={c.id}
-                  className="flex items-center gap-1 text-sm border rounded px-2 py-1 cursor-pointer hover:bg-gray-50"
-                >
-                  <input
-                    type="checkbox"
-                    checked={form.categoria_ids.includes(c.id)}
-                    onChange={() => toggleCategoria(c.id)}
-                  />
+        <form onSubmit={manejarEnvioFormulario} className="space-y-3.5">
+
+          {/* Fila Doble: Nombre y Precio */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-2 space-y-1">
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Nombre del Plato</label>
+              <input type="text" required value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej: Bacon Cheeseburger" className="w-full px-2.5 py-1.5 text-xs bg-[#FAFAFA] border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none focus:border-[#FFB703] font-medium" />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Precio ($)</label>
+              <input type="number" step="0.01" required value={precio} onChange={(e) => setPrecio(e.target.value === '' ? '' : Number(e.target.value))} placeholder="8.99" className="w-full px-2.5 py-1.5 text-xs bg-[#FAFAFA] border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none focus:border-[#FFB703] font-medium" />
+            </div>
+          </div>
+
+          {/* Descripción */}
+          <div className="space-y-1">
+            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Descripción Breve</label>
+            <textarea rows={2} value={descripcion} onChange={(e) => setDescripcion(e.target.value)} placeholder="Detalla los componentes del plato..." className="w-full px-2.5 py-1.5 text-xs bg-[#FAFAFA] border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none focus:border-[#FFB703] font-medium resize-none" />
+          </div>
+
+          {/* ========================================================================= */}
+          {/* RELACIÓN 1: PRODUCTO - CATEGORÍA (Muchos a Muchos) */}
+          {/* ========================================================================= */}
+          <div className="space-y-2 bg-[#FAFAFA] p-2.5 rounded-xl border border-gray-100/40">
+            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Enlazar Categorías</label>
+            <div className="flex gap-2">
+              <select value={tempCategoriaId} onChange={(e) => setTempCategoriaId(e.target.value)} className="flex-grow px-2 py-1.5 text-xs bg-white border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none font-medium cursor-pointer">
+                <option value="">Selecciona una categoría...</option>
+                {categoriasDisponibles.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              </select>
+              <button type="button" onClick={agregarCategoriaLista} className="bg-[#1E1E24] text-white text-xs font-bold px-3 rounded-xl hover:bg-[#FFB703] hover:text-[#1E1E24] transition-colors cursor-pointer">+</button>
+            </div>
+            {/* Badges sutiles de categorías seleccionadas */}
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {categoriasSeleccionadas.map(c => (
+                <span key={c.categoriaId} className="inline-flex items-center text-[10px] font-bold bg-white text-[#1E1E24] border border-gray-100 px-2 py-0.5 rounded-md gap-1 shadow-2xs">
                   {c.nombre}
-                </label>
+                  <button type="button" onClick={() => setCategoriasSeleccionadas(categoriasSeleccionadas.filter(item => item.categoriaId !== c.categoriaId))} className="text-[#E63946] font-black cursor-pointer">×</button>
+                </span>
               ))}
             </div>
           </div>
-        )}
 
-        {ingredientes.length > 0 && (
-          <div>
-            <p className="text-sm font-semibold mb-1">Ingredientes (cantidad)</p>
-            <div className="flex flex-col gap-1 max-h-40 overflow-y-auto border rounded p-2">
-              {ingredientes.map((ing) => {
-                const actual = form.ingredientes.find((i) => i.ingrediente_id === ing.id);
-                return (
-                  <div key={ing.id} className="flex items-center justify-between text-sm py-0.5">
-                    <span>
-                      {ing.nombre}
-                      {ing.es_alergeno && <span className="text-red-500 ml-1 text-xs">⚠️</span>}
-                    </span>
-                    <input
-                      type="number"
-                      className="border rounded w-20 px-2 py-0.5 text-right text-sm"
-                      placeholder="0"
-                      min={0}
-                      step={0.01}
-                      value={actual?.cantidad ?? ""}
-                      onChange={(e) => setIngredienteCantidad(ing.id, e.target.value)}
-                    />
-                  </div>
-                );
-              })}
+          {/* ========================================================================= */}
+          {/* RELACIÓN 2: PRODUCTO - INGREDIENTE (Muchos a Muchos con Atributo Cantidad) */}
+          {/* ========================================================================= */}
+          <div className="space-y-2 bg-[#FAFAFA] p-2.5 rounded-xl border border-gray-100/40">
+            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Ingredientes</label>
+            <div className="grid grid-cols-5 gap-2">
+              <select value={tempIngredienteId} onChange={(e) => setTempIngredienteId(e.target.value)} className="col-span-3 px-2 py-1.5 text-xs bg-white border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none font-medium cursor-pointer">
+                <option value="">Ingrediente...</option>
+                {ingredientesDisponibles.map(i => <option key={i.id} value={i.id}>{i.nombre}</option>)}
+              </select>
+              <input type="number" step="0.01" value={tempCantidadIngrediente} onChange={(e) => setTempCantidadIngrediente(e.target.value === '' ? '' : Number(e.target.value))} placeholder="Cant." className="col-span-1 px-2 py-1.5 text-xs bg-white border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none font-medium" />
+              <button type="button" onClick={agregarIngredienteLista} className="col-span-1 bg-[#1E1E24] text-white text-xs font-bold rounded-xl hover:bg-[#FFB703] hover:text-[#1E1E24] transition-colors cursor-pointer">+</button>
+            </div>
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {ingredientesSeleccionados.map(i => (
+                <span key={i.ingredienteId} className="inline-flex items-center text-[10px] font-bold bg-white text-[#1E1E24] border border-gray-100 px-2 py-0.5 rounded-md gap-1 shadow-2xs">
+                  {i.nombre} ({i.cantidad})
+                  <button type="button" onClick={() => setIngredientesSeleccionados(ingredientesSeleccionados.filter(item => item.ingredienteId !== i.ingredienteId))} className="text-[#E63946] font-black cursor-pointer">×</button>
+                </span>
+              ))}
             </div>
           </div>
-        )}
-
-        {producto && (
-          <div>
-            <p className="text-sm font-semibold mb-1">Imagen del producto</p>
-            {imagenPreview && (
-              <img
-                src={imagenPreview}
-                alt="preview"
-                className="w-24 h-24 object-cover rounded mb-2"
+          {/* Fila Doble: Stock Cantidad e Imagen */}
+          <div className="grid grid-cols-2 gap-4 items-center">
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                Stock Disponible (Unidades)
+              </label>
+              <input
+                type="number"
+                value={stockCantidad}
+                onChange={(e) => setStockCantidad(Number(e.target.value))}
+                className="w-full px-2.5 py-1.5 text-xs bg-[#FAFAFA] border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none font-medium"
               />
-            )}
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleImagenChange}
-            />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                Imagen del Plato
+              </label>
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-lg bg-[#FAFAFA] border border-dashed border-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                  {previewUrl ? <img src={previewUrl} alt="Prev" className="w-full h-full object-cover" /> : <span className="text-xs">🍔</span>}
+                </div>
+                <label className="bg-white border border-gray-200 hover:border-[#FFB703] text-gray-500 font-bold text-[10px] py-1.5 px-2.5 rounded-xl transition-all cursor-pointer shadow-2xs">
+                  <span>Subir</span>
+                  <input type="file" accept="image/*" className="hidden" onChange={manejarImagen} />
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Fila Doble de Switches: Habilitado y Disponible (Campos booleanos de la clase SQLModel) */}
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            <div className="flex items-center space-x-2 select-none">
+              <label className="relative flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={habilitado}
+                  onChange={(e) => setHabilitado(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-7 h-4 bg-gray-200 rounded-full peer peer-focus:outline-none peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500"></div>
+              </label>
+              <span className="text-[10px] font-bold text-[#1E1E24] uppercase tracking-wide">
+                Habilitado
+              </span>
+            </div>
+
+            <div className="flex items-center space-x-2 select-none">
+              <label className="relative flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={disponible}
+                  onChange={(e) => setDisponible(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-7 h-4 bg-gray-200 rounded-full peer peer-focus:outline-none peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500"></div>
+              </label>
+              <span className="text-[10px] font-bold text-[#1E1E24] uppercase tracking-wide">
+                Disponible en Menú
+              </span>
+            </div>
+          </div>
+
+          {/* Botonera Inferior del Modal */}
+          <div className="pt-2 flex items-center space-x-2">
             <button
               type="button"
-              onClick={() => fileRef.current?.click()}
-              disabled={imagenMut.isPending}
-              className="text-sm border rounded px-3 py-1 hover:bg-gray-50 disabled:opacity-50"
+              onClick={onClose}
+              className="w-1/3 bg-gray-50 hover:bg-gray-100 text-[#1E1E24] border border-gray-100 font-bold text-xs py-2 rounded-xl transition-all cursor-pointer text-center"
             >
-              {imagenMut.isPending ? "Subiendo..." : imagenPreview ? "Cambiar imagen" : "Subir imagen"}
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="w-2/3 bg-[#E63946] hover:bg-opacity-95 text-white font-extrabold text-xs py-2 rounded-xl tracking-wider uppercase transition-all shadow-md active:scale-98 focus:outline-none cursor-pointer text-center"
+            >
+              {productoEditar ? 'Guardar cambios' : 'Crear producto'}
             </button>
           </div>
-        )}
 
-        <button
-          onClick={handleSubmit}
-          disabled={pending}
-          className="bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50 font-semibold mt-1"
-        >
-          {pending ? "Guardando..." : producto ? "Guardar cambios" : "Crear producto"}
-        </button>
+        </form>
       </div>
-    </Modal>
+    </div>
   );
 }
->>>>>>> 963d90eee5cc139a2bc81ca319867c5edb30dfbb

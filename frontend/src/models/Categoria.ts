@@ -1,8 +1,10 @@
-export interface Categoria{
-    id: number
-    nombre: string
-    descripcion: string
-    habilitado: boolean
-    categoria_padre?: Categoria
-    categoria_hija?: Categoria
+export interface CategoriaRead {
+  id: number;
+  nombre: string;
+  descripcion?: string;
+  parent_id?: number;
+}
+
+export interface CategoriaTree extends CategoriaRead {
+  subcategorias: CategoriaTree[];
 }

@@ -1,4 +1,5 @@
 @tailwind base;
+@import url('https://googleapis.com');
 @tailwind components;
 @tailwind utilities;
 @font-face {
@@ -7,27 +8,26 @@
   font-weight: normal;
   font-style: normal;
 }
-@font-face {
-  font-family: 'Maxwell';
-  src: url('./assets/fonts/MAXWELL-BOLD.woff2') format('woff2');
-  font-weight: 700;
-  font-style: normal;
-}
-@font-face {
-  font-family: 'Maxwell';
-  src: url('./assets/fonts/MAXWELL-LIGHT.woff2') format('woff2');
-  font-weight: 300;
-  font-style: normal;
-}
-@font-face {
-  font-family: 'Maxwell';
-  src: url('./assets/fonts/MAXWELL-REGULAR.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
+@layer base {
+  html, body {
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    -webkit-font-smoothing: antialiased; /* Suaviza los bordes pixelados en Chrome/Safari */
+    -moz-osx-font-smoothing: grayscale; /* Suaviza los bordes en Firefox */
+    text-rendering: optimizeLegibility;
+  }
 }
 @font-face {
   font-family: 'iconsTwo';
   src: url('./assets/fonts/icon-works.regular.woff2') format('woff2');
   font-weight: normal;
   font-style: normal;
+} 
+/* Oculta la barra de desplazamiento en todos los navegadores */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Safari y Chrome */
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE y Edge */
+  scrollbar-width: none;  /* Firefox */
 }

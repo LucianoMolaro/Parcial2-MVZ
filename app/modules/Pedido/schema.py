@@ -1,12 +1,15 @@
 from decimal import Decimal
+from enum import Enum
 from typing import List, Optional
 from sqlmodel import SQLModel
 
+from app.modules.DireccionEntrega.schema import DireccionRead
+from app.modules.Producto.schema import ProductoCarrito
 
-class DetallePedidoCreate(SQLModel):
-    producto_id: int
-    cantidad: int
-    personalizacion: Optional[int] = None
+
+class FormaPago(str, Enum):
+    EFECTIVO = "EFECTIVO"
+    MERCADO_PAGO = "MERCADOPAGO"
 
 
 class DetallePedidoRead(SQLModel):
@@ -16,7 +19,7 @@ class DetallePedidoRead(SQLModel):
     nombre: str
     precio: Decimal
     subtotal: Decimal
-    personalizacion: Optional[int] = None
+    personalizacion_nombres: list[str] = []
 
 
 class DetallePedidoUpdate(SQLModel):
@@ -25,11 +28,9 @@ class DetallePedidoUpdate(SQLModel):
 
 
 class PedidoCreate(SQLModel):
-    forma_pago_codigo: str
-    direccion_entrega_id: int
-    costo_envio: Decimal = Decimal("0.00")
-    notas: Optional[str] = None
-    detalles: List[DetallePedidoCreate]
+    productos: list[ProductoCarrito]
+    direccion: int
+    forma_pago: FormaPago
 
 
 class PedidoCambiarEstado(SQLModel):
@@ -41,10 +42,11 @@ class PedidoRead(SQLModel):
     id: int
     usuario_id: int
     forma_pago_codigo: str
-    direccion_entrega_id: int
+    direccion: DireccionRead
     estado_codigo: str
     subtotal: Decimal
     costo_envio: Decimal
     total: Decimal
     notas: Optional[str] = None
-    detalles: List[DetallePedidoRead] = []
+    created_at: Optional[str] = None
+    detalles: list[DetallePedidoRead]

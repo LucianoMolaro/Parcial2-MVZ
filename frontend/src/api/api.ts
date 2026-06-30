@@ -18,8 +18,18 @@ function opts(method = "GET", body?: unknown): RequestInit {
   return o;
 }
 
+// async function check(res: Response) {
+//   if (!res.ok) throw new Error(await res.text());
+//   return res;
+// }
 async function check(res: Response) {
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) {
+    const json = await res.json();
+    console.log("ERROR BACKEND:");
+    console.log(json);
+    console.log(JSON.stringify(json, null, 2));
+    throw new Error("Error");
+  }
   return res;
 }
 

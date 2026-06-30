@@ -6,6 +6,7 @@ from app.core.UnitOfWork import UnitOfWork
 from app.modules.Categoria.schema import CategoriaRead
 from app.modules.Producto.model import Producto
 from app.modules.Producto.schema import (
+    ProductoCarrito,
     ProductoCreate,
     ProductoDisponibilidadUpdate,
     ProductoIngredienteRead,
@@ -40,7 +41,7 @@ def _cargar(uow: UnitOfWork, producto: Producto) -> ProductoRead:
         nombre=producto.nombre,
         precio=producto.precio,
         descripcion=producto.descripcion,
-        imagen_url=producto.imagen_url,
+        imagen_url=producto.imagenes_url[0] if producto.imagenes_url else None,
         disponible=producto.disponible,
         stock_cantidad=producto.stock_cantidad,
         categorias=categorias,
@@ -69,13 +70,9 @@ def create(uow: UnitOfWork, data: ProductoCreate) -> ProductoRead:
         uow.productos.add(producto)
 
         for cat_id in data.categoria_ids:
-            if not uow.categoria.get_by_id(cat_id):
-                raise HTTPException(status_code=404, detail=f"Categoría {cat_id} no encontrada")
             uow.producto_categorias.add(ProductoCategoria(producto_id=producto.id, categoria_id=cat_id))
 
         for item in data.ingredientes:
-            if not uow.ingredientes.get_by_id(item.ingrediente_id):
-                raise HTTPException(status_code=404, detail=f"Ingrediente {item.ingrediente_id} no encontrado")
             uow.producto_ingredientes.add(ProductoIngrediente(
                 producto_id=producto.id,
                 ingrediente_id=item.ingrediente_id,
@@ -136,7 +133,8 @@ def update_imagen(uow: UnitOfWork, producto_id: int, imagen_url: str) -> Product
         producto = uow.productos.get_habilitado(producto_id)
         if not producto:
             raise HTTPException(status_code=404, detail="Producto no encontrado")
-        producto.imagen_url = imagen_url
+        if imagen_url not in producto.imagenes_url:
+            producto.imagenes_url = producto.imagenes_url + [imagen_url]
         return _cargar(uow, producto)
 
 
