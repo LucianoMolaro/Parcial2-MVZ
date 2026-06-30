@@ -13,14 +13,10 @@ class ProductoIngredienteRead(SQLModel):
     cantidad: float
 
 
-class ProductoCreate(SQLModel):
-    nombre: str
-    precio: float
-    descripcion: Optional[str] = None
-    disponible: bool = True
-    stock_cantidad: int = 0
-    categoria_ids: List[int] = []
-    ingredientes: List["ProductoIngredienteInput"] = []
+class ProductoCarrito(SQLModel):
+    id: int
+    cantidad: int
+    personalizacion: list[int]
 
 
 class ProductoIngredienteInput(SQLModel):
@@ -31,6 +27,16 @@ class ProductoIngredienteInput(SQLModel):
 class ProductoDisponibilidadUpdate(SQLModel):
     stock_cantidad: int
     disponible: bool
+
+
+class ProductoCreate(SQLModel):
+    nombre: str
+    precio: float
+    descripcion: Optional[str] = None
+    disponible: bool = True
+    stock_cantidad: int = 0
+    categoria_ids: list[int] = []
+    ingredientes: list[ProductoIngredienteInput] = []
 
 
 class ProductoRead(SQLModel):

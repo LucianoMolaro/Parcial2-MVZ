@@ -2,13 +2,57 @@ from collections import defaultdict
 from decimal import Decimal
 from typing import List, Optional
 
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 
 from app.core.UnitOfWork import UnitOfWork
 from app.modules.DetallePedido.model import DetallePedido
+from app.modules.DireccionEntrega.model import DireccionEntrega
 from app.modules.HistorialEstadoPedido.model import HistorialEstadoPedido
 from app.modules.Pedido.model import Pedido
-from app.modules.Pedido.schema import PedidoCreate, PedidoCambiarEstado
+from app.modules.DireccionEntrega.schema import DireccionRead
+from app.modules.Pedido.schema import DetallePedidoRead, PedidoCreate, PedidoCambiarEstado, PedidoRead
+from app.modules.Producto.model import Producto
+from app.modules.Usuario.model import Usuario
+
+def _cargar_detalles(uow: UnitOfWork, pedido: Pedido) -> PedidoRead:
+    dir = pedido.direccion_entrega
+    detalles = [
+        DetallePedidoRead(
+            pedido_id=d.pedido_id,
+            producto_id=d.producto_id,
+            cantidad=d.cantidad,
+            nombre=d.nombre,
+            precio=d.precio,
+            subtotal=d.subtotal,
+            personalizacion_nombres=getattr(d, "personalizacion_nombres", []) or [],
+        )
+        for d in pedido.detalles
+    ]
+    return PedidoRead(
+        id=pedido.id,
+        usuario_id=pedido.usuario_id,
+        forma_pago_codigo=pedido.forma_pago_codigo,
+        direccion=DireccionRead(alias=dir.alias, calle1=dir.calle1, altura=dir.altura, ciudad=dir.ciudad),
+        estado_codigo=pedido.estado_codigo,
+        subtotal=pedido.subtotal,
+        costo_envio=pedido.costo_envio,
+        total=pedido.total,
+        notas=pedido.notas,
+        created_at=pedido.created_at.isoformat() if pedido.created_at else None,
+        detalles=detalles,
+    )
+
+
+def get_all(uow: UnitOfWork, usuario_id_filter: Optional[int], offset: int, limit: int) -> List[PedidoRead]:
+    return [_cargar_detalles(uow, p) for p in uow.pedidos.get_all_filtrado(usuario_id_filter, offset, limit)]
+
+
+def get_by_id(uow: UnitOfWork, pedido_id: int) -> PedidoRead:
+    pedido = uow.pedidos.get_by_id(pedido_id)
+    if not pedido:
+        raise HTTPException(status_code=404, detail="Pedido no encontrado")
+    return _cargar_detalles(uow, pedido)
+
 
 TRANSICIONES: dict[str, list[str]] = {
     "PENDIENTE":  ["CONFIRMADO", "CANCELADO"],
@@ -20,102 +64,115 @@ TRANSICIONES: dict[str, list[str]] = {
 CANCELACION_CLIENT = {"PENDIENTE", "CONFIRMADO"}
 
 
-def _cargar_detalles(uow: UnitOfWork, pedido: Pedido) -> Pedido:
-    pedido.detalles = uow.detalles.get_by_pedido(pedido.id)
-    return pedido
+def crear_pedido(uow: UnitOfWork, usuario: Usuario, data: PedidoCreate) -> PedidoRead:
+    direccion = uow.direcciones.get_by_id(data.direccion)
 
+    if direccion is None or direccion.usuario_id != usuario.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Dirección inválida."
+        )
 
-def get_all(uow: UnitOfWork, usuario_id: Optional[int], offset: int, limit: int) -> List[Pedido]:
-    pedidos = uow.pedidos.get_all_filtrado(usuario_id, offset, limit)
-    for p in pedidos:
-        _cargar_detalles(uow, p)
-    return pedidos
+    forma_pago = uow.formas_pago.get_by_id(data.forma_pago)
 
+    if forma_pago is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Forma de pago inválida."
+        )
 
-def get_by_id(uow: UnitOfWork, pedido_id: int) -> Pedido:
-    pedido = uow.pedidos.get_by_id(pedido_id)
-    if not pedido:
-        raise HTTPException(status_code=404, detail="Pedido no encontrado")
+    producto_ids = [p.id for p in data.productos]
+
+    productos = uow.productos.get_by_ids(producto_ids)
+
+    productos = {
+        p.id: p
+        for p in productos
+    }
+
+    pedido = Pedido(
+        usuario_id=usuario.id,
+        direccion_entrega_id=direccion.id,
+        forma_pago_codigo=forma_pago.codigo,
+        estado_codigo="PENDIENTE",
+        subtotal=Decimal("0"),
+        descuento=Decimal("0"),
+        costo_envio=Decimal("50"),
+        total=Decimal("0"),
+    )
+
+    uow.pedidos.add(pedido)
+
+    subtotal = Decimal("0")
+
+    for item in data.productos:
+
+        producto = productos.get(item.id)
+
+        if producto is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Producto {item.id} inexistente."
+            )
+
+        if not producto.habilitado:
+            raise HTTPException(
+                status_code=400,
+                detail=f"{producto.nombre} no está disponible."
+            )
+
+        if producto.stock_cantidad < item.cantidad:
+            raise HTTPException(
+                status_code=400,
+                detail=f"No hay stock suficiente de {producto.nombre}."
+            )
+
+        personalizacion_ids = []
+        personalizacion_nombres = []
+
+        for relacion in producto.producto_ingrediente:
+
+            if (
+                relacion.es_removible
+                and relacion.ingrediente_id in item.personalizacion
+            ):
+                continue
+
+            personalizacion_ids.append(relacion.ingrediente.id)
+            personalizacion_nombres.append(relacion.ingrediente.nombre)
+
+        detalle = DetallePedido(
+            pedido_id=pedido.id,
+            producto_id=producto.id,
+            cantidad=item.cantidad,
+            nombre=producto.nombre,
+            precio=Decimal(str(producto.precio)),
+            subtotal=Decimal(str(producto.precio))
+            * item.cantidad,
+            personalizacion=personalizacion_ids,
+            personalizacion_nombres=personalizacion_nombres,
+        )
+
+        pedido.detalles.append(detalle)
+
+        producto.stock_cantidad -= item.cantidad
+
+        subtotal += detalle.subtotal
+
+    pedido.subtotal = subtotal
+    pedido.total = (
+        subtotal
+        + pedido.costo_envio
+        - pedido.descuento
+    )
+
     return _cargar_detalles(uow, pedido)
 
 
-def create(uow: UnitOfWork, usuario_id: int, data: PedidoCreate) -> Pedido:
-    with uow:
-        fp = uow.formas_pago.get_habilitada(data.forma_pago_codigo)
-        if not fp:
-            raise HTTPException(status_code=404, detail="Forma de pago no disponible")
 
-        direccion = uow.direcciones.get_habilitada(data.direccion_entrega_id)
-        if not direccion or direccion.usuario_id != usuario_id:
-            raise HTTPException(status_code=404, detail="Dirección de entrega no encontrada")
 
-        if not data.detalles:
-            raise HTTPException(status_code=422, detail="El pedido debe tener al menos un producto")
 
-        # Fusionar ítems duplicados para evitar violación de PK compuesta (pedido_id, producto_id)
-        merged: dict[int, int] = defaultdict(int)
-        for item in data.detalles:
-            merged[item.producto_id] += item.cantidad
-        from app.modules.Pedido.schema import DetallePedidoCreate
-        detalles_unicos = [
-            DetallePedidoCreate(producto_id=pid, cantidad=cant)
-            for pid, cant in merged.items()
-        ]
-
-        subtotal = Decimal("0.00")
-        items = []
-        for item in detalles_unicos:
-            producto = uow.productos.get_by_id(item.producto_id)
-            if not producto or not producto.disponible or not producto.habilitado:
-                raise HTTPException(status_code=404, detail=f"Producto {item.producto_id} no disponible")
-            precio = Decimal(str(producto.precio))
-            subtotal += precio * item.cantidad
-            items.append((item, producto, precio))
-
-        for item, producto, _ in items:
-            links = uow.producto_ingredientes.get_by_producto(producto.id)
-            for link in links:
-                # SELECT FOR UPDATE: bloquea la fila para evitar race conditions
-                ingrediente = uow.ingredientes.get_by_id_locked(link.ingrediente_id)
-                necesario = float(link.cantidad) * item.cantidad
-                if ingrediente.stock_cantidad < necesario:
-                    raise HTTPException(
-                        status_code=409,
-                        detail=f"Stock insuficiente de '{ingrediente.nombre}' "
-                               f"(disponible: {ingrediente.stock_cantidad}, necesario: {necesario})",
-                    )
-
-        total = subtotal + data.costo_envio
-        pedido = uow.pedidos.add(Pedido(
-            usuario_id=usuario_id,
-            forma_pago_codigo=data.forma_pago_codigo,
-            direccion_entrega_id=data.direccion_entrega_id,
-            estado_codigo="PENDIENTE",
-            subtotal=subtotal,
-            costo_envio=data.costo_envio,
-            total=total,
-            notas=data.notas,
-        ))
-
-        detalles = []
-        for item, producto, precio in items:
-            detalle = uow.detalles.add(DetallePedido(
-                pedido_id=pedido.id,
-                producto_id=item.producto_id,
-                cantidad=item.cantidad,
-                nombre=producto.nombre,
-                precio=precio,
-                subtotal=precio * item.cantidad,
-                personalizacion=item.personalizacion,
-            ))
-            detalles.append(detalle)
-
-            for link in uow.producto_ingredientes.get_by_producto(producto.id):
-                ingrediente = uow.ingredientes.get_by_id(link.ingrediente_id)
-                ingrediente.stock_cantidad -= float(link.cantidad) * item.cantidad
-
-        pedido.detalles = detalles
-        return pedido
+        
 
 
 def cambiar_estado(

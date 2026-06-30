@@ -3,8 +3,8 @@ from fastapi import APIRouter, Depends, Query, UploadFile, File, HTTPException
 
 from app.core.deps import get_current_active_user, get_current_user_optional, get_uow, require_role
 from app.core.UnitOfWork import UnitOfWork
-from app.core.Cloudinary import upload_image
-from app.modules.Producto.schema import ProductoCreate, ProductoDisponibilidadUpdate, ProductoRead
+from app.core.Cloudinary import upload_image_to_cloud
+from app.modules.Producto.schema import ProductoCarrito, ProductoCreate, ProductoDisponibilidadUpdate, ProductoRead
 from app.modules.Producto import service as producto_service
 from app.modules.Usuario.model import Usuario
 
@@ -82,8 +82,8 @@ async def subir_imagen_producto(
     if not imagen.content_type or not imagen.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="El archivo debe ser una imagen")
     contenido = await imagen.read()
-    url = upload_image(contenido)
-    return producto_service.update_imagen(uow, producto_id, url)
+    resultado = upload_image_to_cloud(contenido, "productos")
+    return producto_service.update_imagen(uow, producto_id, resultado["url"])
 
 
 @router.delete("/{producto_id}", status_code=204)

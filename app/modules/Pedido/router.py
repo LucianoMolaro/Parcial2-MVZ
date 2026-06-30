@@ -40,13 +40,28 @@ def obtener_pedido(
     return pedido
 
 
-@router.post("/", response_model=PedidoRead, status_code=201)
-def crear_pedido(
+@router.post("/crear", response_model=PedidoRead, status_code=201)
+async def crear_pedido(
     datos: PedidoCreate,
     uow: UnitOfWork = Depends(get_uow),
     current_user: Usuario = Depends(get_current_active_user),
 ):
-    return pedido_service.create(uow, current_user.id, datos)
+    pedido = pedido_service.crear_pedido(uow, current_user, datos)
+
+    await ws_manager.send_to_room("pedidos_admin", WsEvent(
+        event_type="nuevo_pedido",
+        data={"pedido_id": pedido.id, "usuario_id": pedido.usuario_id},
+    ))
+
+    for item in datos.productos:
+        producto = uow.productos.get_by_id(item.id)
+        if producto and producto.stock_cantidad == 0:
+            await ws_manager.send_to_all(WsEvent(
+                event_type="producto_sin_stock",
+                data={"producto_id": item.id},
+            ))
+
+    return pedido
 
 
 @router.patch("/{pedido_id}/estado", response_model=PedidoRead)
@@ -75,14 +90,20 @@ async def cambiar_estado(
 
 
 @router.delete("/{pedido_id}", status_code=204)
-def cancelar_pedido(
+async def cancelar_pedido(
     pedido_id: int,
     uow: UnitOfWork = Depends(get_uow),
     current_user: Usuario = Depends(get_current_active_user),
     _=Depends(require_role(["ADMIN"])),
 ):
-    pedido_service.cambiar_estado(
+    pedido = pedido_service.cambiar_estado(
         uow, pedido_id,
         PedidoCambiarEstado(estado_pedido_codigo="CANCELADO", motivo="Cancelado por ADMIN"),
         actor_id=current_user.id, es_cliente=False,
     )
+    evento = WsEvent(
+        event_type="pedido_estado_actualizado",
+        data={"pedido_id": pedido.id, "usuario_id": pedido.usuario_id, "estado_codigo": "CANCELADO"},
+    )
+    await ws_manager.send_to_room("pedidos_admin", evento)
+    await ws_manager.send_to_room(f"pedido_{pedido.usuario_id}", evento)
