@@ -7,6 +7,7 @@ from app.core.WsManager import ws_manager, WsEvent
 from app.modules.Usuario.model import Usuario
 from app.modules.Pedido.schema import PedidoCambiarEstado, PedidoCreate, PedidoRead
 from app.modules.Pedido import service as pedido_service
+from app.modules.Pago import service as pago_service
 
 router = APIRouter(prefix="/pedidos", tags=["Pedidos"])
 
@@ -40,28 +41,13 @@ def obtener_pedido(
     return pedido
 
 
-@router.post("/crear", response_model=PedidoRead, status_code=201)
+@router.post("/crear", status_code=201)
 async def crear_pedido(
-    datos: PedidoCreate,
-    uow: UnitOfWork = Depends(get_uow),
-    current_user: Usuario = Depends(get_current_active_user),
+    # datos: PedidoCreate,
+    # uow: UnitOfWork = Depends(get_uow),
+    # current_user: Usuario = Depends(get_current_active_user),
 ):
-    pedido = pedido_service.crear_pedido(uow, current_user, datos)
-
-    await ws_manager.send_to_room("pedidos_admin", WsEvent(
-        event_type="nuevo_pedido",
-        data={"pedido_id": pedido.id, "usuario_id": pedido.usuario_id},
-    ))
-
-    for item in datos.productos:
-        producto = uow.productos.get_by_id(item.id)
-        if producto and producto.stock_cantidad == 0:
-            await ws_manager.send_to_all(WsEvent(
-                event_type="producto_sin_stock",
-                data={"producto_id": item.id},
-            ))
-
-    return pedido
+    return pedido_service.crear_pedido()
 
 
 @router.patch("/{pedido_id}/estado", response_model=PedidoRead)

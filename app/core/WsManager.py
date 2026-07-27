@@ -19,16 +19,11 @@ class WsEvent:
     def __init__(self, event_type: str, data: Any = None, sender_id: str = None):
         self.event_type = event_type
         self.data = data
-        self.sender_id = sender_id
-        self.timestamp = datetime.now().isoformat()
     
     def to_dict(self) -> Dict:
-        """Convierte el evento a diccionario"""
         return {
             "event_type": self.event_type,
             "data": self.data,
-            "sender_id": self.sender_id,
-            "timestamp": self.timestamp
         }
     
     def to_json(self) -> str:

@@ -1,17 +1,8 @@
 from typing import List, Optional
 from sqlmodel import SQLModel
 
-from app.modules.Categoria.schema import CategoriaRead
-
-
-class ProductoIngredienteRead(SQLModel):
-    ingrediente_id: int
-    nombre: str
-    unidad_medida_id: int
-    es_alergeno: bool
-    stock_cantidad: float
-    cantidad: float
-
+from app.modules.Categoria.schema import CategoriaSchema
+from app.modules.ProductoIngrediente.schema import ProductoIngredienteRead
 
 class ProductoCarrito(SQLModel):
     id: int
@@ -39,13 +30,14 @@ class ProductoCreate(SQLModel):
     ingredientes: list[ProductoIngredienteInput] = []
 
 
-class ProductoRead(SQLModel):
+class ProductoSchema(SQLModel):
     id: int
     nombre: str
     precio: float
-    descripcion: Optional[str] = None
-    imagen_url: Optional[str] = None
+    descripcion: str | None = None
     disponible: bool
     stock_cantidad: int
-    categorias: List[CategoriaRead] = []
-    ingredientes: List[ProductoIngredienteRead] = []
+    habilitado: bool
+    imagenes_url: list[str] = []
+    categorias: list[CategoriaSchema] = []
+    ingredientes: list[ProductoIngredienteRead] = []

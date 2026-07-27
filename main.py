@@ -37,6 +37,7 @@ from app.modules.Pedido.router import router as pedido_router
 from app.modules.DetallePedido.router import router as detalle_router
 from app.modules.UnidadMedida.router import router as unidad_medida_router
 from app.modules.Pago.router import router as pago_router
+from app.modules.Cloudinary.router import router as cloudinary_router
 # from app.modules.Admin.router import router as admin_router
 
 
@@ -54,6 +55,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
@@ -67,6 +70,7 @@ app.include_router(categoria_router)
 app.include_router(ingrediente_router)
 app.include_router(producto_router)
 app.include_router(usuario_router)
+app.include_router(cloudinary_router)
 # app.include_router(rol_router)
 # app.include_router(usuariorol_router)
 app.include_router(direccion_router)

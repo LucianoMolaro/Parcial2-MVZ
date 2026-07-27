@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, List, Optional
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import BigInteger, Column, DateTime, Field, ForeignKey, Relationship, SQLModel, String, Text, func
 
 from app.modules.ProductoCategoria.model import ProductoCategoria
 
@@ -9,19 +9,23 @@ if TYPE_CHECKING:
 
 
 class Categoria(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    __tablename__ = "categoria"
+    id: Optional[int] = Field(default=None,sa_column=Column(BigInteger, primary_key=True, autoincrement=True))
 
     #Atributos
-    nombre: str = Field(index=True)
-    descripcion: Optional[str] = None
-    parent_id: Optional[int] = Field(default=None, foreign_key="categoria.id")
+    nombre: str = Field(sa_column=Column(String(100), unique=True, nullable=False))
+    descripcion: Optional[str] = Field(default=None, sa_column=Column(Text, nullable=True))
+    parent_id: Optional[int] = Field(default=None,sa_column=Column(BigInteger, ForeignKey("categoria.id"), nullable=True))
+    imagen_url: Optional[str] = Field(default=None, sa_column=Column(Text, nullable=True))
+    imagen_public_id: Optional[str] = Field(default=None, sa_column=Column(Text, nullable=True))
     habilitado: bool = Field(default=True)
 
 
     #Audit
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc),sa_column_kwargs={"onupdate": lambda: datetime.now(timezone.utc)})
-
+    created_at: datetime = Field(sa_column=Column(DateTime(timezone=True), nullable=False, server_default=func.now()))
+    updated_at: datetime = Field(sa_column=Column(DateTime(timezone=True),nullable=False,server_default=func.now(),onupdate=func.now()))
+    deleted_at: Optional[datetime] = Field(default=None, sa_column=Column(DateTime(timezone=True), nullable=True))
+    
     #Relaciones
     subcategorias: List["Categoria"] = Relationship(
         back_populates="parent",
@@ -37,6 +41,7 @@ class Categoria(SQLModel, table=True):
             "remote_side": "[Categoria.id]",
         },
     )
+    
     producto_categoria: list["ProductoCategoria"] = Relationship(back_populates="categoria")
 
     

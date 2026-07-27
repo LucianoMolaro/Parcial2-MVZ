@@ -19,7 +19,7 @@ class Settings(BaseSettings):
 
     MP_ACCESS_TOKEN: str = ""
     MP_PUBLIC_KEY: str = ""
-    MP_BACKEND_BASE_URL: str = "http://localhost:8000"
+    MP_URL: str = ""
     MP_WEBHOOK_SECRET: str = ""
 
     CLOUDINARY_CLOUD_NAME: str = ""

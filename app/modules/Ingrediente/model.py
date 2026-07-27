@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, List, Optional
 from sqlmodel import Field, Relationship, SQLModel
 
 from app.modules.Producto.model import Producto
+from app.modules.UnidadMedida.model import UnidadMedida
 
 if TYPE_CHECKING:
     from app.modules.ProductoIngrediente.model import ProductoIngrediente
@@ -14,6 +15,7 @@ class Ingrediente(SQLModel, table=True):
     #Atributos
     nombre: str
     es_alergeno: bool = Field(default=False)
+    es_removible: bool = Field(default=False)
     stock_cantidad: float = Field(default=0)
     unidad_medida_id: int = Field(foreign_key="unidadmedida.id")
 
@@ -24,4 +26,5 @@ class Ingrediente(SQLModel, table=True):
 
     #Relaciones
     producto_ingrediente: list["ProductoIngrediente"] = Relationship(back_populates="ingrediente")
+    unidad_medida: UnidadMedida = Relationship()
     

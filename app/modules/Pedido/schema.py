@@ -50,3 +50,4 @@ class PedidoRead(SQLModel):
     notas: Optional[str] = None
     created_at: Optional[str] = None
     detalles: list[DetallePedidoRead]
+    init_point: Optional[str] = None

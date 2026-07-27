@@ -8,7 +8,7 @@ from app.core.Config import settings
 from app.core.deps import get_current_active_user, get_uow
 from app.core.UnitOfWork import UnitOfWork
 from app.modules.Pago import service as pago_service
-from app.modules.Pago.schema import PreferenciaResponse, PagoRead
+from app.modules.Pago.schema import PagoCreate, PreferenciaRead, PagoRead
 from app.modules.Usuario.model import Usuario
 
 logger = logging.getLogger(__name__)
@@ -29,8 +29,15 @@ def _verify_mp_signature(x_signature: str, x_request_id: str, data_id: str) -> b
     except Exception:
         return False
 
+@router.post("/crear")
+async def crear_pago(
+    request: Request,
+    uow: UnitOfWork = Depends(get_uow),
+    # current_user = Depends(get_current_active_user)
+):
+    return pago_service.crear_pago(uow, request)
 
-@router.post("/preferencia/{pedido_id}", response_model=PreferenciaResponse)
+@router.post("/preferencia/{pedido_id}", response_model=PreferenciaRead)
 def crear_preferencia(
     pedido_id: int,
     uow: UnitOfWork = Depends(get_uow),

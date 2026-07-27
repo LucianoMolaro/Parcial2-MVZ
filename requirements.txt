@@ -3,9 +3,12 @@ uvicorn
 sqlmodel
 psycopg2-binary
 python-dotenv
+python-multipart
 pydantic-settings
 python-jose
 passlib
 bcrypt==4.0.1
 mercadopago
 cloudinary
+pillow
+recharts

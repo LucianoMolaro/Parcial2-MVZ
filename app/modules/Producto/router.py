@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query, UploadFile, File, HTTPException
 from app.core.deps import get_current_active_user, get_current_user_optional, get_uow, require_role
 from app.core.UnitOfWork import UnitOfWork
 from app.core.Cloudinary import upload_image_to_cloud
-from app.modules.Producto.schema import ProductoCarrito, ProductoCreate, ProductoDisponibilidadUpdate, ProductoRead
+from app.modules.Producto.schema import ProductoCarrito, ProductoCreate, ProductoDisponibilidadUpdate, ProductoSchema
 from app.modules.Producto import service as producto_service
 from app.modules.Usuario.model import Usuario
 
@@ -12,7 +12,7 @@ router = APIRouter(prefix="/productos", tags=["Productos"])
 
 ROLES_ADMIN = {"ADMIN", "STOCK"}
 
-@router.get("/", response_model=List[ProductoRead])
+@router.get("/", response_model=list[ProductoSchema])
 def listar_productos(
     page: int = 1,
     uow: UnitOfWork = Depends(get_uow),
@@ -25,7 +25,7 @@ def listar_productos(
     return producto_service.get_productos(uow, es_admin, page)
 
 
-@router.get("/{producto_id}", response_model=ProductoRead)
+@router.get("/{producto_id}", response_model=ProductoSchema)
 def obtener_producto(
     producto_id: int,
     uow: UnitOfWork = Depends(get_uow),
@@ -34,26 +34,26 @@ def obtener_producto(
     return producto_service.get_by_id(uow, producto_id)
 
 
-@router.post("/", response_model=ProductoRead, status_code=201)
+@router.post("/", response_model=ProductoSchema, status_code=201)
 def crear_producto(
-    datos: ProductoCreate,
+    datos: ProductoSchema,
     uow: UnitOfWork = Depends(get_uow),
     _=Depends(require_role(["ADMIN", "STOCK"])),
 ):
     return producto_service.create(uow, datos)
 
 
-@router.put("/{producto_id}", response_model=ProductoRead)
+@router.put("/{producto_id}", response_model=ProductoSchema)
 def editar_producto(
     producto_id: int,
-    datos: ProductoCreate,
+    datos: ProductoSchema,
     uow: UnitOfWork = Depends(get_uow),
     _=Depends(require_role(["ADMIN", "STOCK"])),
 ):
     return producto_service.update(uow, producto_id, datos)
 
 
-@router.patch("/{producto_id}/disponibilidad", response_model=ProductoRead)
+@router.patch("/{producto_id}/disponibilidad", response_model=ProductoSchema)
 def actualizar_disponibilidad(
     producto_id: int,
     datos: ProductoDisponibilidadUpdate,
@@ -63,7 +63,7 @@ def actualizar_disponibilidad(
     return producto_service.update_disponibilidad(uow, producto_id, datos)
 
 
-@router.patch("/{producto_id}/reactivar", response_model=ProductoRead)
+@router.patch("/{producto_id}/reactivar", response_model=ProductoSchema)
 def reactivar_producto(
     producto_id: int,
     uow: UnitOfWork = Depends(get_uow),
@@ -72,7 +72,7 @@ def reactivar_producto(
     return producto_service.reactivar(uow, producto_id)
 
 
-@router.post("/{producto_id}/imagen", response_model=ProductoRead)
+@router.post("/{producto_id}/imagen", response_model=ProductoSchema)
 async def subir_imagen_producto(
     producto_id: int,
     imagen: UploadFile = File(...),

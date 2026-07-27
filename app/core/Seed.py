@@ -14,7 +14,7 @@ ROLES = [
     Rol(codigo="ADMIN",   nombre="Administrador", descripcion="CRUD completo de todo el sistema"),
     Rol(codigo="STOCK",   nombre="Gestor de Stock", descripcion="Actualiza stock y disponibilidad"),
     Rol(codigo="PEDIDOS", nombre="Gestor de Pedidos", descripcion="Ve y avanza estados de pedidos"),
-    Rol(codigo="CLIENT",  nombre="Cliente", descripcion="Catálogo, carrito y pedidos propios"),
+    Rol(codigo="CLIENTE",  nombre="Cliente", descripcion="Catálogo, carrito y pedidos propios"),
 ]
 
 ESTADOS_PEDIDO = [
@@ -36,7 +36,7 @@ USUARIOS = [
     {"username": "admin",   "nombre": "Admin",   "apellido": "Sistema", "email": "admin@store.com",   "rol": "ADMIN"},
     {"username": "stock",   "nombre": "Stock",   "apellido": "Sistema", "email": "stock@store.com",   "rol": "STOCK"},
     {"username": "pedidos", "nombre": "Pedidos", "apellido": "Sistema", "email": "pedidos@store.com", "rol": "PEDIDOS"},
-    {"username": "cliente", "nombre": "Cliente", "apellido": "Demo",    "email": "cliente@store.com", "rol": "CLIENT"},
+    {"username": "cliente", "nombre": "Cliente", "apellido": "Demo",    "email": "cliente@store.com", "rol": "CLIENTE"},
 ]
 
 UNIDAD_MEDIDA = [

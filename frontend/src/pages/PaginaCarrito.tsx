@@ -1,111 +1,53 @@
-import React, { useState } from 'react';
+import { useEffect, useState } from 'react';
 import BarraNavegacion from '../components/Navbar';
 import { useCarrito } from '../context/CarritoContext';
-import { ProductoPublic } from '../models/Producto';
-import { Ingrediente } from '../models/Ingrediente';
+import { Producto } from '../models/Producto';
 import { useWsEvent } from '../context/WebSocketContext';
 import { WsEvent } from '../models/WebSockets';
- // ajustá el path a tus tipos
 
-// ── Mock de productos completos (reemplazá por fetch cuando conectes el backend) ──
-const PRODUCTOS_MOCK: ProductoPublic[] = [
-  {
-    id: 1,
-    nombre: "Mega Burger Triple Queso",
-    descripcion: "Triple carne de res, triple cheddar, tocino crujiente, cebolla caramelizada y salsa secreta.",
-    precio: 8.99,
-    imagenes: [],
-    stock: 20,
-    ingredientes: [
-      { id: 1, nombre: "Cheddar",           es_alergeno: true,  es_removible: true,  stock: 50 ,imagen:""},
-      { id: 2, nombre: "Tocino",            es_alergeno: false, es_removible: true,  stock: 30 ,imagen:""},
-      { id: 3, nombre: "Cebolla caramelizada", es_alergeno: false, es_removible: true, stock: 40 , imagen:""},
-    ],
-  },
-  {
-    id: 2,
-    nombre: "Pizza Pepperoni Suprema",
-    descripcion: "Masa artesanal, salsa de tomate premium, doble mozzarella, abundante pepperoni.",
-    precio: 12.50,
-    imagenes: [],
-    stock: 15,
-    ingredientes: [
-      { id: 4, nombre: "Mozzarella",  es_alergeno: true,  es_removible: true,  stock: 60 , imagen:""},
-      { id: 5, nombre: "Pepperoni",   es_alergeno: false, es_removible: true,  stock: 45 , imagen:""},
-    ],
-  },
-  {
-    id: 3,
-    nombre: "Crispy Chicken Tenders",
-    descripcion: "6 piezas de pechuga de pollo marinada, empanizado extra crujiente con salsa BBQ.",
-    precio: 6.50,
-    imagenes: [],
-    stock: 25,
-    ingredientes: [
-      { id: 6, nombre: "Salsa BBQ", es_alergeno: false, es_removible: true, stock: 80 ,imagen:""},
-    ],
-  },
-  {
-    id: 4,
-    nombre: "Papas Cheddar & Bacon",
-    descripcion: "Porción grande de papas fritas rústicas bañadas en nuestra salsa de queso cheddar fundido.",
-    precio: 4.99,
-    imagenes: [],
-    stock: 30,
-    ingredientes: [
-      { id: 1, nombre: "Cheddar", es_alergeno: true,  es_removible: true, stock: 50 , imagen:""},
-      { id: 2, nombre: "Tocino",  es_alergeno: false, es_removible: true, stock: 30 , imagen:""},
-    ],
-  },
-  {
-    id: 5,
-    nombre: "Burger BBQ Ahumada",
-    descripcion: "Carne a la parrilla, queso monterey jack, aros de cebolla apanados, lechuga y tomate.",
-    precio: 9.25,
-    imagenes: [],
-    stock: 18,
-    ingredientes: [
-      { id: 7, nombre: "Monterey Jack",  es_alergeno: true,  es_removible: true, stock: 35 , imagen:""},
-      { id: 8, nombre: "Aros de cebolla", es_alergeno: false, es_removible: true, stock: 20 , imagen:""},
-    ],
-  },
-  {
-    id: 7,
-    nombre: "Combo Tequeños Auténticos",
-    descripcion: "8 deditos de masa crujiente rellenos de abundante queso blanco derretido.",
-    precio: 5.75,
-    imagenes: [],
-    stock: 40,
-    ingredientes: [
-      { id: 9, nombre: "Queso blanco", es_alergeno: true, es_removible: false, stock: 70 , imagen:""},
-    ],
-  },
-];
-
+interface Direccion { id: number; alias: string; calle1: string; altura: string; ciudad: string; }
 
 export default function PaginaCarrito() {
-  const { state, incrementar, decrementar, eliminar, quitarIngrediente, restaurarIngrediente } = useCarrito();
+  const { state, incrementar, decrementar, eliminar, quitarIngrediente, restaurarIngrediente, resetear } = useCarrito();
   const [sinStock, setSinStock] = useState<Set<number>>(new Set());
+  const [productosDetalle, setProductosDetalle] = useState<Producto[]>([]);
+  const [direcciones, setDirecciones] = useState<Direccion[]>([]);
+  const [direccionId, setDireccionId] = useState('');
+  const [formaPago, setFormaPago] = useState('');
+  const [cargando, setCargando] = useState(false);
+
+  useEffect(() => {
+    if (state.items.length === 0) return;
+    fetch('http://localhost:8000/productos/', { credentials: 'include' })
+      .then(r => r.json())
+      .then(setProductosDetalle)
+      .catch(() => {});
+  }, [state.items.length]);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/direcciones/', { credentials: 'include' })
+      .then(r => r.json())
+      .then(setDirecciones)
+      .catch(() => {});
+  }, []);
 
   useWsEvent('producto_sin_stock', (evt: WsEvent) => {
     const d = evt.data as { producto_id: number };
     setSinStock(prev => new Set([...prev, d.producto_id]));
   });
 
-  // Cruzamos los items del carrito con los datos completos del producto
   const itemsCarrito = state.items
     .map((item) => ({
       ...item,
-      producto: PRODUCTOS_MOCK.find((p) => p.id === item.id),
+      producto: productosDetalle.find((p) => p.id === item.id),
     }))
     .filter((item) => item.producto !== undefined) as Array<{
       id: number;
       cantidad: number;
       personalizacion: number[];
-      producto: ProductoPublic;
+      producto: Producto;
     }>;
 
-  // Variables financieras del resumen
   const subtotal  = itemsCarrito.reduce((acc, item) => acc + item.producto.precio * item.cantidad, 0);
   const descuento = subtotal > 15 ? 2.50 : 0.00;
   const costoEnvio = subtotal > 0 ? 1.99 : 0.00;
@@ -115,13 +57,40 @@ export default function PaginaCarrito() {
     alert(`Abrir modal de personalización para: ${nombre} (Quitar cebolla, pepinillos, aderezos...)`);
   };
 
+  const irAPagar = async () => {
+    if (!direccionId || !formaPago || itemsCarrito.length === 0) return;
+    setCargando(true);
+    const body = {
+      productos: itemsCarrito.map(i => ({ id: i.id, cantidad: i.cantidad, personalizacion: i.personalizacion })),
+      direccion: Number(direccionId),
+      forma_pago: formaPago,
+    };
+    const res = await fetch('http://localhost:8000/pedidos/crear', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }).catch(() => null);
+    setCargando(false);
+    if (!res || !res.ok) return;
+    const pedido = await res.json();
+    resetear();
+    if (formaPago === 'MERCADOPAGO' && pedido.init_point) {
+      window.location.href = pedido.init_point;
+    } else {
+      window.location.href = '/pedidos';
+    }
+  };
+
+  const botonDeshabilitado = itemsCarrito.length === 0 || itemsCarrito.some(item => sinStock.has(item.id)) || !direccionId || !formaPago || cargando;
+
   return (
     <>
       <BarraNavegacion />
       <div className="min-h-screen bg-[#FAFAFA] py-8 px-4 sm:px-6 lg:px-8">
-        
+
         <div className="w-4/5 mx-auto lg:flex lg:gap-8 items-start">
-          
+
           {/* ── LADO IZQUIERDO: LISTADO DE PRODUCTOS ── */}
           <div className="w-full lg:w-2/3 space-y-4 mb-6 lg:mb-0">
             <h1 className="text-xl font-extrabold text-[#1E1E24] tracking-tight mb-2">
@@ -134,11 +103,6 @@ export default function PaginaCarrito() {
               </div>
             ) : (
               itemsCarrito.map((item) => {
-                // Ingredientes quitados: cruzamos los IDs de personalizacion con los del producto
-                const ingredientesQuitados = item.producto.ingredientes.filter((ing: Ingrediente) =>
-                  item.personalizacion.includes(ing.id)
-                );
-
                 return (
                   <article
                     key={item.id}
@@ -148,7 +112,7 @@ export default function PaginaCarrito() {
                     <div className="flex items-center space-x-3 flex-grow">
                       <div className="w-14 h-14 bg-gradient-to-b from-amber-50/20 to-transparent rounded-lg flex items-center justify-center overflow-hidden border border-gray-50 flex-shrink-0">
                         <img
-                          src={item.producto.imagenes[0]?.url ?? ""}
+                          src={item.producto.imagenes_url?.[0] ?? ""}
                           alt={item.producto.nombre}
                           className="w-full h-full object-contain"
                         />
@@ -156,19 +120,12 @@ export default function PaginaCarrito() {
                       <div>
                         <h2 className="text-sm font-extrabold text-[#1E1E24] leading-tight">{item.producto.nombre}</h2>
                         <span className="text-xs font-bold text-[#E63946] block mt-0.5">${item.producto.precio.toFixed(2)}</span>
-                        
-                        {/* Badge de ingredientes quitados */}
-                        {ingredientesQuitados.length > 0 && (
-                          <p className="text-[10px] text-gray-400 font-medium mt-1">
-                            🚫 Sin: {ingredientesQuitados.map((ing: Ingrediente) => ing.nombre).join(', ')}
-                          </p>
-                        )}
                       </div>
                     </div>
 
                     {/* Acciones */}
                     <div className="flex items-center space-x-3 flex-shrink-0">
-                      
+
                       {/* Personalizar */}
                       <button
                         onClick={() => personalizarProducto(item.producto.nombre)}
@@ -219,7 +176,7 @@ export default function PaginaCarrito() {
             <h2 className="text-xl font-extrabold text-[#1E1E24] tracking-tight mb-2 opacity-0 lg:opacity-100 pointer-events-none">
               Resumen
             </h2>
-            
+
             <div className="bg-white rounded-xl border border-gray-100/60 shadow-xs p-5 space-y-4">
               <h3 className="text-sm font-extrabold text-[#1E1E24] border-b border-gray-50 pb-2">
                 Resumen del Pedido
@@ -230,14 +187,14 @@ export default function PaginaCarrito() {
                   <span>Subtotal</span>
                   <span className="text-[#1E1E24] font-bold">${subtotal.toFixed(2)}</span>
                 </div>
-                
+
                 {descuento > 0 && (
                   <div className="flex justify-between text-emerald-600">
                     <span>Descuento aplicado</span>
                     <span className="font-bold">-${descuento.toFixed(2)}</span>
                   </div>
                 )}
-                
+
                 <div className="flex justify-between">
                   <span>Costo de envío</span>
                   <span className="text-[#1E1E24] font-bold">
@@ -253,7 +210,7 @@ export default function PaginaCarrito() {
                     Dirección de Entrega
                   </label>
                   <button
-                    onClick={() => console.log("Abrir modal o vista para crear dirección")}
+                    onClick={() => window.location.href = '/direcciones'}
                     className="text-[10px] font-bold text-[#E63946] hover:text-[#1E1E24] transition-colors focus:outline-none cursor-pointer flex items-center space-x-0.5"
                     title="Agregar nueva dirección"
                   >
@@ -262,12 +219,16 @@ export default function PaginaCarrito() {
                 </div>
                 <div className="w-full">
                   <select
+                    value={direccionId}
+                    onChange={e => setDireccionId(e.target.value)}
                     className="w-full px-2.5 py-2 text-xs bg-[#FAFAFA] border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none focus:border-[#FFB703] transition-colors font-medium cursor-pointer"
-                    defaultValue=""
                   >
                     <option value="" disabled hidden>Selecciona dónde entregamos...</option>
-                    <option value="casa">🏠 Casa (Av. Principal 123)</option>
-                    <option value="oficina">🏢 Oficina (Calle 45 #789)</option>
+                    {direcciones.map(d => (
+                      <option key={d.id} value={d.id}>
+                        {d.alias} — {d.calle1} {d.altura}, {d.ciudad}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -279,12 +240,13 @@ export default function PaginaCarrito() {
                 </label>
                 <div className="w-full">
                   <select
+                    value={formaPago}
+                    onChange={e => setFormaPago(e.target.value)}
                     className="w-full px-2.5 py-2 text-xs bg-[#FAFAFA] border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none focus:border-[#FFB703] transition-colors font-medium cursor-pointer"
-                    defaultValue=""
                   >
                     <option value="" disabled hidden>Selecciona cómo pagar...</option>
-                    <option value="efectivo">Efectivo</option>
-                    <option value="mercadopago">Mercado Pago</option>
+                    <option value="EFECTIVO">Efectivo</option>
+                    <option value="MERCADOPAGO">Mercado Pago</option>
                   </select>
                 </div>
               </div>
@@ -301,10 +263,11 @@ export default function PaginaCarrito() {
                 </p>
               )}
               <button
-                disabled={itemsCarrito.length === 0 || itemsCarrito.some(item => sinStock.has(item.id))}
+                onClick={irAPagar}
+                disabled={botonDeshabilitado}
                 className="w-full bg-[#E63946] hover:bg-opacity-95 disabled:bg-gray-200 text-white font-extrabold text-xs py-2.5 px-4 rounded-lg tracking-wider uppercase transition-all shadow-xs active:scale-98 focus:outline-none cursor-pointer disabled:cursor-not-allowed text-center"
               >
-                Ir a Pagar
+                {cargando ? 'Procesando...' : 'Ir a Pagar'}
               </button>
             </div>
           </div>

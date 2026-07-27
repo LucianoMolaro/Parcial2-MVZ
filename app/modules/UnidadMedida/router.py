@@ -1,15 +1,15 @@
 from fastapi import APIRouter, Depends
 
-from app.core.deps import get_current_active_user, get_uow
+from app.core.deps import get_current_active_user, get_uow, require_role
 from app.core.UnitOfWork import UnitOfWork
-from app.modules.UnidadMedida.model import UnidadMedida
+from app.modules.UnidadMedida.schema import UnidadMedidaSchema
 
-router = APIRouter(prefix="/unidades-medida", tags=["UnidadMedida"])
+router = APIRouter(prefix="/unidades/medida", tags=["UnidadMedida"])
 
 
-@router.get("/", response_model=list[UnidadMedida])
+@router.get("/listar", response_model=list[UnidadMedidaSchema])
 def listar_unidades(
     uow: UnitOfWork = Depends(get_uow),
-    _=Depends(get_current_active_user),
+    _=Depends(require_role("ADMIN")),
 ):
-    return uow.unidades_medida.listar()
+    return uow.unidades_medida.get_all()

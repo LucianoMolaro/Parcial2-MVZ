@@ -4,6 +4,7 @@ from typing import List, Optional
 
 from fastapi import HTTPException, status
 
+from app.core.MercadoPago import crear_preferencia
 from app.core.UnitOfWork import UnitOfWork
 from app.modules.DetallePedido.model import DetallePedido
 from app.modules.DireccionEntrega.model import DireccionEntrega
@@ -13,6 +14,7 @@ from app.modules.DireccionEntrega.schema import DireccionRead
 from app.modules.Pedido.schema import DetallePedidoRead, PedidoCreate, PedidoCambiarEstado, PedidoRead
 from app.modules.Producto.model import Producto
 from app.modules.Usuario.model import Usuario
+from app.core.Config import settings
 
 def _cargar_detalles(uow: UnitOfWork, pedido: Pedido) -> PedidoRead:
     dir = pedido.direccion_entrega
@@ -64,109 +66,126 @@ TRANSICIONES: dict[str, list[str]] = {
 CANCELACION_CLIENT = {"PENDIENTE", "CONFIRMADO"}
 
 
-def crear_pedido(uow: UnitOfWork, usuario: Usuario, data: PedidoCreate) -> PedidoRead:
-    direccion = uow.direcciones.get_by_id(data.direccion)
+def crear_pedido():
+    # direccion = uow.direcciones.get_by_id(data.direccion)
 
-    if direccion is None or direccion.usuario_id != usuario.id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Dirección inválida."
-        )
+    # if direccion is None or direccion.usuario_id != usuario.id:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_404_NOT_FOUND,
+    #         detail="Dirección inválida."
+    #     )
 
-    forma_pago = uow.formas_pago.get_by_id(data.forma_pago)
+    # forma_pago = uow.formas_pago.get_by_id(data.forma_pago)
 
-    if forma_pago is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Forma de pago inválida."
-        )
+    # if forma_pago is None:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_400_BAD_REQUEST,
+    #         detail="Forma de pago inválida."
+    #     )
 
-    producto_ids = [p.id for p in data.productos]
+    # producto_ids = [p.id for p in data.productos]
 
-    productos = uow.productos.get_by_ids(producto_ids)
+    # productos = uow.productos.get_by_ids(producto_ids)
 
-    productos = {
-        p.id: p
-        for p in productos
+    # productos = {
+    #     p.id: p
+    #     for p in productos
+    # }
+
+    # pedido = Pedido(
+    #     usuario_id=usuario.id,
+    #     direccion_entrega_id=direccion.id,
+    #     forma_pago_codigo=forma_pago.codigo,
+    #     estado_codigo="PENDIENTE",
+    #     subtotal=Decimal("0"),
+    #     descuento=Decimal("0"),
+    #     costo_envio=Decimal("50"),
+    #     total=Decimal("0"),
+    # )
+
+    # uow.pedidos.add(pedido)
+
+    # subtotal = Decimal("0")
+
+    # for item in data.productos:
+
+    #     producto = productos.get(item.id)
+
+    #     if producto is None:
+    #         raise HTTPException(
+    #             status_code=404,
+    #             detail=f"Producto {item.id} inexistente."
+    #         )
+
+    #     if not producto.habilitado:
+    #         raise HTTPException(
+    #             status_code=400,
+    #             detail=f"{producto.nombre} no está disponible."
+    #         )
+
+    #     if producto.stock_cantidad < item.cantidad:
+    #         raise HTTPException(
+    #             status_code=400,
+    #             detail=f"No hay stock suficiente de {producto.nombre}."
+    #         )
+
+    #     personalizacion_ids = []
+    #     personalizacion_nombres = []
+
+    #     for relacion in producto.producto_ingrediente:
+
+    #         if (
+    #             relacion.es_removible
+    #             and relacion.ingrediente_id in item.personalizacion
+    #         ):
+    #             continue
+
+    #         personalizacion_ids.append(relacion.ingrediente.id)
+    #         personalizacion_nombres.append(relacion.ingrediente.nombre)
+
+    #     detalle = DetallePedido(
+    #         pedido_id=pedido.id,
+    #         producto_id=producto.id,
+    #         cantidad=item.cantidad,
+    #         nombre=producto.nombre,
+    #         precio=Decimal(str(producto.precio)),
+    #         subtotal=Decimal(str(producto.precio))
+    #         * item.cantidad,
+    #         personalizacion=personalizacion_ids,
+    #         personalizacion_nombres=personalizacion_nombres,
+    #     )
+
+    #     pedido.detalles.append(detalle)
+
+    #     producto.stock_cantidad -= item.cantidad
+
+    #     subtotal += detalle.subtotal
+
+    # pedido.subtotal = subtotal
+    # pedido.total = (
+    #     subtotal
+    #     + pedido.costo_envio
+    #     - pedido.descuento
+    # )
+    preference_data = {
+        "items": [
+            {
+                "title": "Pedido #123",
+                "quantity": 1,
+                "unit_price": 1000.00
+            }
+        ],
+        "back_urls": {
+        "success": "https://xvcrkf3s-5173.brs.devtunnels.ms/",
+        "failure": "https://xvcrkf3s-5173.brs.devtunnels.ms/",
+        "pending": "https://xvcrkf3s-5173.brs.devtunnels.ms/",
+        },
+        "auto_return": "approved",
+        "external_reference": "123",
+        "notification_url": f"{settings.MP_URL}/pagos/crear"
     }
 
-    pedido = Pedido(
-        usuario_id=usuario.id,
-        direccion_entrega_id=direccion.id,
-        forma_pago_codigo=forma_pago.codigo,
-        estado_codigo="PENDIENTE",
-        subtotal=Decimal("0"),
-        descuento=Decimal("0"),
-        costo_envio=Decimal("50"),
-        total=Decimal("0"),
-    )
-
-    uow.pedidos.add(pedido)
-
-    subtotal = Decimal("0")
-
-    for item in data.productos:
-
-        producto = productos.get(item.id)
-
-        if producto is None:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Producto {item.id} inexistente."
-            )
-
-        if not producto.habilitado:
-            raise HTTPException(
-                status_code=400,
-                detail=f"{producto.nombre} no está disponible."
-            )
-
-        if producto.stock_cantidad < item.cantidad:
-            raise HTTPException(
-                status_code=400,
-                detail=f"No hay stock suficiente de {producto.nombre}."
-            )
-
-        personalizacion_ids = []
-        personalizacion_nombres = []
-
-        for relacion in producto.producto_ingrediente:
-
-            if (
-                relacion.es_removible
-                and relacion.ingrediente_id in item.personalizacion
-            ):
-                continue
-
-            personalizacion_ids.append(relacion.ingrediente.id)
-            personalizacion_nombres.append(relacion.ingrediente.nombre)
-
-        detalle = DetallePedido(
-            pedido_id=pedido.id,
-            producto_id=producto.id,
-            cantidad=item.cantidad,
-            nombre=producto.nombre,
-            precio=Decimal(str(producto.precio)),
-            subtotal=Decimal(str(producto.precio))
-            * item.cantidad,
-            personalizacion=personalizacion_ids,
-            personalizacion_nombres=personalizacion_nombres,
-        )
-
-        pedido.detalles.append(detalle)
-
-        producto.stock_cantidad -= item.cantidad
-
-        subtotal += detalle.subtotal
-
-    pedido.subtotal = subtotal
-    pedido.total = (
-        subtotal
-        + pedido.costo_envio
-        - pedido.descuento
-    )
-
-    return _cargar_detalles(uow, pedido)
+    return crear_preferencia(preference_data)
 
 
 
@@ -213,6 +232,9 @@ def cambiar_estado(
 
         if destino == "CANCELADO":
             for detalle in uow.detalles.get_by_pedido(pedido.id):
+                producto = uow.productos.get_by_id(detalle.producto_id)
+                if producto:
+                    producto.stock_cantidad += detalle.cantidad
                 for link in uow.producto_ingredientes.get_by_producto(detalle.producto_id):
                     ingrediente = uow.ingredientes.get_by_id(link.ingrediente_id)
                     if ingrediente:

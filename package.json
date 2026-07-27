@@ -1,5 +1,8 @@
 {
   "dependencies": {
-    "cloudinary": "^2.10.0"
+    "cloudinary": "^2.10.0",
+    "mercadopago": "^3.1.0",
+    "next-cloudinary": "^6.17.5",
+    "recharts": "^3.9.0"
   }
 }

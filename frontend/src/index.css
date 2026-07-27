@@ -1,5 +1,4 @@
 @tailwind base;
-@import url('https://googleapis.com');
 @tailwind components;
 @tailwind utilities;
 @font-face {
@@ -30,4 +29,16 @@
 .scrollbar-hide {
   -ms-overflow-style: none;  /* IE y Edge */
   scrollbar-width: none;  /* Firefox */
+}
+
+/* Quita las flechas en Chrome, Safari, Edge y Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Quita las flechas en Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
 }

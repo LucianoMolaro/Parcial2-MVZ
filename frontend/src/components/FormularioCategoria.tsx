@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { CategoriaTree } from '../models/Categoria';
+import { Categoria } from '../models/Categoria';
 
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
-  categoriaEditar?: CategoriaTree;
+  categoriaEditar?: Categoria;
   parentIdPreset?: number;
 }
 
@@ -13,25 +13,28 @@ export default function FormularioCategoria({ isOpen, onClose, categoriaEditar, 
   const [descripcion, setDescripcion] = useState('');
   const [habilitada, setHabilitada] = useState(true);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [categorias, setCategorias] = useState<CategoriaTree[]>([]);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [seleccionNiveles, setSeleccionNiveles] = useState<number[]>([]);
 
   useEffect(() => {
-    fetch('http://localhost:8000/categorias/arbol', { credentials: 'include' })
+    fetch('http://localhost:8000/categorias/', { credentials: 'include' })
       .then(r => r.json())
       .then(setCategorias);
   }, []);
 
-  useEffect(() => {
-    if (categoriaEditar) {
-      setNombre(categoriaEditar.nombre);
-      setDescripcion(categoriaEditar.descripcion ?? '');
-    } else {
-      setNombre('');
-      setDescripcion('');
-      setSeleccionNiveles(parentIdPreset ? [parentIdPreset] : []);
-    }
-  }, [categoriaEditar, parentIdPreset]);
+useEffect(() => {
+  if (categoriaEditar) {
+    setNombre(categoriaEditar.nombre);
+    setDescripcion(categoriaEditar.descripcion ?? '');
+    setSeleccionNiveles(
+      categoriaEditar.parent_id ? [categoriaEditar.parent_id] : []
+    );
+  } else {
+    setNombre('');
+    setDescripcion('');
+    setSeleccionNiveles(parentIdPreset ? [parentIdPreset] : []);
+  }
+}, [categoriaEditar, parentIdPreset]);
 
   if (!isOpen) return null;
 
@@ -50,7 +53,7 @@ export default function FormularioCategoria({ isOpen, onClose, categoriaEditar, 
 
   const renderizarSelectoresCascada = () => {
     const selectoresJSX = [];
-    let opcionesActuales = categorias;
+    let opcionesActuales = categorias.filter(cat => cat.parent_id === null);
 
     selectoresJSX.push(
       <div key="nivel-0" className="space-y-1">
@@ -64,7 +67,9 @@ export default function FormularioCategoria({ isOpen, onClose, categoriaEditar, 
         >
           <option value="">Categoria principal</option>
           {opcionesActuales.map(cat => (
-            <option key={cat.id} value={cat.id}>{cat.nombre}</option>
+            <option key={cat.id} value={cat.id}>
+              {cat.nombre}
+            </option>
           ))}
         </select>
       </div>
@@ -72,9 +77,10 @@ export default function FormularioCategoria({ isOpen, onClose, categoriaEditar, 
 
     for (let i = 0; i < seleccionNiveles.length; i++) {
       const idSeleccionado = seleccionNiveles[i];
-      const categoriaEncontrada = opcionesActuales.find(c => c.id === idSeleccionado);
 
-      if (categoriaEncontrada?.subcategorias && categoriaEncontrada.subcategorias.length > 0) {
+      const categoriaEncontrada = categorias.find(c => c.id === idSeleccionado);
+
+      if (categoriaEncontrada?.subcategorias.length) {
         opcionesActuales = categoriaEncontrada.subcategorias;
         const siguienteNivelIndex = i + 1;
 
@@ -90,7 +96,9 @@ export default function FormularioCategoria({ isOpen, onClose, categoriaEditar, 
             >
               <option value="">Dentro de...</option>
               {opcionesActuales.map(sub => (
-                <option key={sub.id} value={sub.id}>{sub.nombre}</option>
+                <option key={sub.id} value={sub.id}>
+                  {sub.nombre}
+                </option>
               ))}
             </select>
           </div>
@@ -103,26 +111,39 @@ export default function FormularioCategoria({ isOpen, onClose, categoriaEditar, 
     return selectoresJSX;
   };
 
-  const manejarEnvio = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const padreFinalId = seleccionNiveles.length > 0 ? seleccionNiveles[seleccionNiveles.length - 1] : null;
+const manejarEnvio = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    const payload = { nombre, descripcion: descripcion || null, parent_id: padreFinalId };
-
-    const url = categoriaEditar
-      ? `http://localhost:8000/categorias/${categoriaEditar.id}`
-      : 'http://localhost:8000/categorias/';
-    const method = categoriaEditar ? 'PUT' : 'POST';
-
-    const res = await fetch(url, {
-      method,
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    if (res.ok) onClose();
+  const payload = {
+    nombre,
+    descripcion: descripcion || null,
+    parent_id:
+      seleccionNiveles.length > 0
+        ? seleccionNiveles[seleccionNiveles.length - 1]
+        : null,
+    imagen_url: categoriaEditar?.imagen_url ?? null,
+    habilitado: categoriaEditar?.habilitado ?? true,
   };
+
+  const url = categoriaEditar
+    ? `http://localhost:8000/categorias/${categoriaEditar.id}`
+    : "http://localhost:8000/categorias/";
+
+  const method = categoriaEditar ? "PUT" : "POST";
+
+  const res = await fetch(url, {
+    method,
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (res.ok) {
+    onClose();
+  }
+};
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

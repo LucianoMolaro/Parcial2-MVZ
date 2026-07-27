@@ -2,52 +2,41 @@ import React, { useEffect, useState } from 'react';
 import BarraNavegacion from '../components/Navbar';
 import {  BsBoxArrowInRight, BsChevronCompactRight, BsPencilSquare, BsPlusSquare, BsTrash } from 'react-icons/bs';
 import FormularioCategoria from '../components/FormularioCategoria';
-import { CategoriaTree } from '../models/Categoria';
+import { Categoria } from '../models/Categoria';
+
+
 
 export default function PaginaCategorias() {
-  const [categorias, setCategorias] = useState<CategoriaTree[]>([]);
-  const [historialNav, setHistorialNav] = useState<CategoriaTree[]>([]);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [historialNav, setHistorialNav] = useState<Categoria[]>([]);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
-  const [categoriaEditar, setCategoriaEditar] = useState<CategoriaTree | undefined>(undefined);
+  const [categoriaEditar, setCategoriaEditar] = useState<Categoria | undefined>(undefined);
   const [parentIdPreset, setParentIdPreset] = useState<number | undefined>(undefined);
 
   const cargarCategorias = async () => {
-    const res = await fetch('http://localhost:8000/categorias/arbol', { credentials: 'include' });
+    const res = await fetch('http://localhost:8000/categorias/', { credentials: 'include' });
     if (res.ok) setCategorias(await res.json());
   };
 
   useEffect(() => { cargarCategorias(); }, []);
 
   const esRaiz = historialNav.length === 0;
-  const categoriaActual = !esRaiz ? historialNav[historialNav.length - 1] : null;
 
-  // Refresca el nodo actual en el historial tras recargar datos
+  const categoriaActual = esRaiz
+    ? null
+    : categorias.find(c => c.id === historialNav[historialNav.length - 1].id) ?? null;
+
   const listasVisibles = esRaiz
-    ? categorias
-    : (categoriaActual ? (categorias.find(buscarEnArbol(categoriaActual.id))?.subcategorias ?? buscarSubcats(categorias, categoriaActual.id)) : []);
+    ? categorias.filter(c => c.parent_id === null)
+    : categoriaActual?.subcategorias ?? [];
 
-  function buscarEnArbol(id: number) {
-    return function find(c: CategoriaTree): boolean {
-      return c.id === id || c.subcategorias.some(find);
+    const entrarASubcategoria = (cat: Categoria) => {
+      if (cat.subcategorias && cat.subcategorias.length > 0) {
+        setHistorialNav(prev => [...prev, cat]);
+      } else {
+        alert(`"${cat.nombre}" es el último nivel. No tiene más subcategorías internas.`);
+      }
     };
-  }
-
-  function buscarSubcats(lista: CategoriaTree[], id: number): CategoriaTree[] {
-    for (const c of lista) {
-      if (c.id === id) return c.subcategorias;
-      const found = buscarSubcats(c.subcategorias, id);
-      if (found.length || c.subcategorias.some(s => s.id === id)) return found;
-    }
-    return [];
-  }
-
-  const entrarASubcategoria = (cat: CategoriaTree) => {
-    if (cat.subcategorias && cat.subcategorias.length > 0) {
-      setHistorialNav(prev => [...prev, cat]);
-    } else {
-      alert(`"${cat.nombre}" es el último nivel. No tiene más subcategorías internas.`);
-    }
-  };
 
   const regresarANivel = (index: number) => {
     if (index === -1) {
@@ -63,13 +52,13 @@ export default function PaginaCategorias() {
     setMostrarFormulario(true);
   };
 
-  const abrirEditar = (cat: CategoriaTree) => {
+  const abrirEditar = (cat: Categoria) => {
     setCategoriaEditar(cat);
     setParentIdPreset(undefined);
     setMostrarFormulario(true);
   };
 
-  const abrirSubcategoria = (cat: CategoriaTree) => {
+  const abrirSubcategoria = (cat: Categoria) => {
     setCategoriaEditar(undefined);
     setParentIdPreset(cat.id);
     setMostrarFormulario(true);
@@ -82,7 +71,7 @@ export default function PaginaCategorias() {
     cargarCategorias();
   };
 
-  const eliminar = async (cat: CategoriaTree) => {
+  const eliminar = async (cat: Categoria) => {
     if (!confirm(`¿Eliminar "${cat.nombre}"?`)) return;
     const res = await fetch(`http://localhost:8000/categorias/${cat.id}`, {
       method: 'DELETE',
@@ -162,51 +151,60 @@ export default function PaginaCategorias() {
                 >
                   {/* Info izquierda */}
                   <div className="flex items-center space-x-4 min-w-0 flex-col-2">
-                    <img src="https://www.banderasvdk.com/blog/wp-content/uploads/Bandera-Suiza.jpg" alt="" className='w-16 h-16'/>
+                    <img
+                      src={cat.imagen_url ?? "https://via.placeholder.com/64"}
+                      alt={cat.nombre}
+                      className="w-16 h-16"
+                    />
+
                     <div className="min-w-0 w-11/12">
-                      <h3 className="text-s font-extrabold text-[#1E1E24] leading-tight truncate">
-                        {cat.nombre}
-                      </h3>
-                      <div className='flex items-center gap-1'>
-                        <p className="text-[10px] text-stone-500 font-medium">
-                          Creada:
-                        </p>
-                        <span className='font-semibold text-[11px] text-stone-700'>23 Junio a las 13hs</span>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-s font-extrabold text-[#1E1E24] leading-tight truncate">
+                          {cat.nombre}
+                        </h3>
+
+                        {cat.habilitado ? (
+                          <span className="text-[9px] font-bold bg-green-50 text-green-600 border border-green-200 px-1.5 py-0.5 rounded-md uppercase tracking-wider">
+                            Habilitada
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-bold bg-red-50 text-red-600 border border-red-200 px-1.5 py-0.5 rounded-md uppercase tracking-wider">
+                            Deshabilitada
+                          </span>
+                        )}
                       </div>
-                      <div className='flex items-center gap-1'>
+
+                      <div className="flex items-center gap-1">
                         <p className="text-[10px] text-stone-500 font-medium">
-                          Últ.vez editada:
+                          Descripción:
                         </p>
-                        <span className='font-semibold text-[11px] text-stone-700'>23 Junio a las 13hs</span>
+                        <span className="font-semibold text-[11px] text-stone-700">
+                          {cat.descripcion || "-"}
+                        </span>
                       </div>
-                      <div className='flex items-center gap-1'>
+
+                      <div className="flex items-center gap-1">
                         <p className="text-[10px] text-stone-500 font-medium">
-                          Cantidad de productos:
+                          Subcategorías:
                         </p>
-                        <span className='font-semibold text-[11px] text-stone-700'>20</span>
-                      </div>
-                      <div className='flex items-center gap-1'>
-                        <p className="text-[10px] text-stone-500 font-medium">
-                          Subcategorias:
-                        </p>
-                        <span className='font-semibold text-[11px] text-stone-700'>{cat.subcategorias.length}</span>
+                        <span className="font-semibold text-[11px] text-stone-700">
+                          {cat.subcategorias.length}
+                        </span>
                       </div>
                     </div>
                   </div>
 
                   {/* Acciones derecha */}
-                  <div className="flex items-center space-x-2 flex-shrink-0 ">
-                    {/* Botón condicional: Si tiene carpetas/hijos adentro, muestra un botón sutil para ENTRES */}
+                  <div className="flex items-center space-x-2 flex-shrink-0">
                     {tieneHijos && (
                       <button
-                      onClick={() => entrarASubcategoria(cat)}
-                      className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition-all cursor-pointer bg-amber-50 border-amber-300 text-[#1E1E24] hover:bg-amber-400 hover:text-white`}
-                        >
-                        <BsBoxArrowInRight className='h-3.5 w-3.5'/>
-                    </button>
+                        onClick={() => entrarASubcategoria(cat)}
+                        className="text-xs font-bold px-3 py-1.5 rounded-lg border transition-all cursor-pointer bg-amber-50 border-amber-300 text-[#1E1E24] hover:bg-amber-400 hover:text-white"
+                      >
+                        <BsBoxArrowInRight className="h-3.5 w-3.5" />
+                      </button>
                     )}
 
-                    {/* Botón de Edición Rápida (Consistencia de marca) */}
                     <button
                       onClick={() => abrirEditar(cat)}
                       title="Editar categoria"
@@ -214,6 +212,7 @@ export default function PaginaCategorias() {
                     >
                       <BsPencilSquare className="h-3.5 w-3.5" />
                     </button>
+
                     <button
                       onClick={() => abrirSubcategoria(cat)}
                       title="Agregar subcategoria"
@@ -221,6 +220,7 @@ export default function PaginaCategorias() {
                     >
                       <BsPlusSquare className="h-3.5 w-3.5" />
                     </button>
+
                     <button
                       onClick={() => eliminar(cat)}
                       title="Eliminar categoria"
@@ -229,7 +229,6 @@ export default function PaginaCategorias() {
                       <BsTrash className="h-3.5 w-3.5" />
                     </button>
                   </div>
-
                 </div>
               );
             })}

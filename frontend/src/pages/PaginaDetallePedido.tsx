@@ -25,6 +25,7 @@ interface DetallePedido {
 
 interface PedidoInfo {
   id: number;
+  usuario_id: number;
   estado_codigo: string;
   created_at: string | null;
   direccion: { alias: string; calle1: string; altura: string; ciudad: string };

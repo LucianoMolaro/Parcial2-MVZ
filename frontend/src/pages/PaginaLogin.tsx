@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuthUser } from '../context/AuthContext';
 
 export default function PaginaLogin() {
+  const { login } = useAuthUser()
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
   const manejarIngreso = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Intento de ingreso con:', { username, password });
-    // Aquí conectarías tu lógica de autenticación (ej: AuthContext)
+    login(username, password)
+    navigate("/")
   };
 
   const irARegistro = () => {

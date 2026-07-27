@@ -20,7 +20,7 @@ class Pedido(SQLModel, table=True):
     usuario_id: int = Field(foreign_key="usuario.id")
     forma_pago_codigo: str = Field(foreign_key="formapago.codigo", max_length=20)
     direccion_entrega_id: int = Field(foreign_key="direccionentrega.id")
-    estado_codigo: str = Field(foreign_key="estadopedido.codigo", max_length=20)
+    estado_codigo: str = Field(default="PENDIENTE", foreign_key="estadopedido.codigo", max_length=20)
 
     subtotal: Decimal = Field(max_digits=10, decimal_places=2)
     descuento: Decimal = Field(max_digits=10, decimal_places=2, default=0)

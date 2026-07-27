@@ -3,25 +3,25 @@ from typing import List, Optional
 from fastapi import HTTPException
 
 from app.core.UnitOfWork import UnitOfWork
-from app.modules.Categoria.schema import CategoriaRead
+from app.modules.Categoria.schema import CategoriaSchema
 from app.modules.Producto.model import Producto
 from app.modules.Producto.schema import (
     ProductoCarrito,
     ProductoCreate,
     ProductoDisponibilidadUpdate,
     ProductoIngredienteRead,
-    ProductoRead,
+    ProductoSchema,
 )
 from app.modules.ProductoCategoria.model import ProductoCategoria
 from app.modules.ProductoIngrediente.model import ProductoIngrediente
 
 
-def _cargar(uow: UnitOfWork, producto: Producto) -> ProductoRead:
+def _cargar(uow: UnitOfWork, producto: Producto) -> ProductoSchema:
     categorias = []
     for link in uow.producto_categorias.get_by_producto(producto.id):
         cat = uow.categoria.get_by_id(link.categoria_id)
         if cat:
-            categorias.append(CategoriaRead.model_validate(cat))
+            categorias.append(CategoriaSchema.model_validate(cat))
 
     ingredientes = []
     for link in uow.producto_ingredientes.get_by_producto(producto.id):
@@ -36,32 +36,33 @@ def _cargar(uow: UnitOfWork, producto: Producto) -> ProductoRead:
                 cantidad=float(link.cantidad),
             ))
 
-    return ProductoRead(
+    return ProductoSchema(
         id=producto.id,
         nombre=producto.nombre,
         precio=producto.precio,
         descripcion=producto.descripcion,
-        imagen_url=producto.imagenes_url[0] if producto.imagenes_url else None,
         disponible=producto.disponible,
         stock_cantidad=producto.stock_cantidad,
+        habilitado=producto.habilitado,
+        imagenes_url=producto.imagenes_url,   # 👈 nombre correcto, lista completa
         categorias=categorias,
         ingredientes=ingredientes,
     )
 
 
-def get_productos(uow: UnitOfWork, es_admin: bool, page: int) -> List[ProductoRead]:
+def get_productos(uow: UnitOfWork, es_admin: bool, page: int) -> List[ProductoSchema]:
     offset = (page - 1) * 5
     return [_cargar(uow, p) for p in uow.productos.get_productos_filtrado(es_admin, offset, 5)]
 
 
-def get_by_id(uow: UnitOfWork, producto_id: int) -> ProductoRead:
+def get_by_id(uow: UnitOfWork, producto_id: int) -> ProductoSchema:
     producto = uow.productos.get_habilitado(producto_id)
     if not producto:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     return _cargar(uow, producto)
 
 
-def create(uow: UnitOfWork, data: ProductoCreate) -> ProductoRead:
+def create(uow: UnitOfWork, data: ProductoCreate) -> ProductoSchema:
     with uow:
         producto = Producto(
             nombre=data.nombre, precio=data.precio, descripcion=data.descripcion,
@@ -81,7 +82,7 @@ def create(uow: UnitOfWork, data: ProductoCreate) -> ProductoRead:
         return _cargar(uow, producto)
 
 
-def update(uow: UnitOfWork, producto_id: int, data: ProductoCreate) -> ProductoRead:
+def update(uow: UnitOfWork, producto_id: int, data: ProductoCreate) -> ProductoSchema:
     with uow:
         producto = uow.productos.get_habilitado(producto_id)
         if not producto:
@@ -109,7 +110,7 @@ def update(uow: UnitOfWork, producto_id: int, data: ProductoCreate) -> ProductoR
         return _cargar(uow, producto)
 
 
-def update_disponibilidad(uow: UnitOfWork, producto_id: int, data: ProductoDisponibilidadUpdate) -> ProductoRead:
+def update_disponibilidad(uow: UnitOfWork, producto_id: int, data: ProductoDisponibilidadUpdate) -> ProductoSchema:
     with uow:
         producto = uow.productos.get_habilitado(producto_id)
         if not producto:
@@ -119,7 +120,7 @@ def update_disponibilidad(uow: UnitOfWork, producto_id: int, data: ProductoDispo
         return _cargar(uow, producto)
 
 
-def reactivar(uow: UnitOfWork, producto_id: int) -> ProductoRead:
+def reactivar(uow: UnitOfWork, producto_id: int) -> ProductoSchema:
     with uow:
         producto = uow.productos.get_by_id(producto_id)
         if not producto:
@@ -128,7 +129,7 @@ def reactivar(uow: UnitOfWork, producto_id: int) -> ProductoRead:
         return _cargar(uow, producto)
 
 
-def update_imagen(uow: UnitOfWork, producto_id: int, imagen_url: str) -> ProductoRead:
+def update_imagen(uow: UnitOfWork, producto_id: int, imagen_url: str) -> ProductoSchema:
     with uow:
         producto = uow.productos.get_habilitado(producto_id)
         if not producto:

@@ -3,27 +3,26 @@ from fastapi import HTTPException
 
 from app.core.UnitOfWork import UnitOfWork
 from app.modules.Categoria.model import Categoria
-from app.modules.Categoria.schema import CategoriaCreate, CategoriaTree
+from app.modules.Categoria.schema import CategoriaCreate, CategoriaSchema
 
 
-def get_all(uow: UnitOfWork, nombre: Optional[str], parent_id: Optional[int],
-            offset: int, limit: int) -> List[Categoria]:
-    return uow.categoria.get_all_filtrado(nombre, parent_id, offset, limit)
+def get_all(uow: UnitOfWork) -> List[Categoria]:
+    return uow.categoria.get_all()
 
 
-def get_tree(uow: UnitOfWork) -> List[CategoriaTree]:
-    all_cats = uow.categoria.get_all_habilitadas()
-    by_id = {
-        c.id: CategoriaTree(id=c.id, nombre=c.nombre, descripcion=c.descripcion, parent_id=c.parent_id, subcategorias=[])
-        for c in all_cats
-    }
-    roots = []
-    for c in all_cats:
-        if c.parent_id is None:
-            roots.append(by_id[c.id])
-        elif c.parent_id in by_id:
-            by_id[c.parent_id].subcategorias.append(by_id[c.id])
-    return roots
+# def get_tree(uow: UnitOfWork) -> list[CategoriaSchema]:
+#     all_cats = uow.categoria.get_all_habilitadas()
+#     by_id = {
+#         c.id: CategoriaSchema(id=c.id, nombre=c.nombre, descripcion=c.descripcion, parent_id=c.parent_id, subcategorias=[])
+#         for c in all_cats
+#     }
+#     roots = []
+#     for c in all_cats:
+#         if c.parent_id is None:
+#             roots.append(by_id[c.id])
+#         elif c.parent_id in by_id:
+#             by_id[c.parent_id].subcategorias.append(by_id[c.id])
+#     return roots
 
 
 def get_by_id(uow: UnitOfWork, categoria_id: int) -> Categoria:

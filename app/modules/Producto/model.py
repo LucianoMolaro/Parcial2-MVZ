@@ -1,13 +1,10 @@
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Optional
-from sqlmodel import Field, Relationship, SQLModel
-
+from sqlmodel import JSON, Column, Field, Relationship, SQLModel
 
 
 if TYPE_CHECKING:
-    from app.modules.Categoria.model import Categoria
     from app.modules.DetallePedido.model import DetallePedido
-    from app.modules.Ingrediente.model import Ingrediente
     from app.modules.ProductoCategoria.model import ProductoCategoria
     from app.modules.ProductoIngrediente.model import ProductoIngrediente
 
@@ -19,10 +16,12 @@ class Producto(SQLModel, table=True):
     nombre: str
     precio: float
     descripcion: Optional[str] = None
-    imagen_url: Optional[str] = None
+
     disponible: bool = Field(default=True)
     stock_cantidad: int = Field(default=0)
     habilitado: bool = Field(default=True)
+    imagenes_url: list[str] = Field(default=[], sa_column=Column(JSON))
+
 
     #Audit
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

@@ -1,24 +1,29 @@
+from typing import Optional
+
 from sqlmodel import SQLModel
+
+from app.modules.UnidadMedida.schema import UnidadMedidaSchema
+
+
+
+class IngredienteUpdate(SQLModel):
+    id:int
+    nombre: str
+    unidad_medida_id: int
+    es_alergeno: bool
+    stock_cantidad: float
 
 
 class IngredienteCreate(SQLModel):
     nombre: str
     unidad_medida_id: int
-    es_alergeno: bool = False
-    stock_cantidad: float = 0
+    es_alergeno: bool
+    stock_cantidad: float
 
 
-class IngredienteUpdate(SQLModel):
-    nombre: str
-    es_alergeno: bool = False
-    stock_cantidad: float = 0
-
-
-class IngredienteRead(SQLModel):
+class IngredienteSchema(SQLModel):
     id: int
     nombre: str
-    unidad_medida_id: int
-    unidad_medida_nombre: str = ""
-    unidad_medida_simbolo: str = ""
+    unidad_medida: UnidadMedidaSchema
     es_alergeno: bool
     stock_cantidad: float

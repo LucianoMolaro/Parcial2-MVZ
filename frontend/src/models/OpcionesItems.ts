@@ -13,24 +13,49 @@ export interface filtrosItems{
 
 export const menuitems: menuItems[] = [
         {
+            label: "Dashboard",
+            path: "/admin/dashboard",
+            roles: ["ADMIN"]
+        },
+        {
+            label: "Usuarios",
+            path: "/admin/usuarios",
+            roles: ["ADMIN"]
+        },
+        {
             label: "Productos",
+            path: "/admin/productos",
+            roles: ["ADMIN"]
+        },
+        {
+            label: "Catalogo",
             path: "/",
-            roles: ["CLIENT", "GUEST"],
+            roles: ["CLIENTE", "GUEST", "ADMIN"],
         },
         {
             label: "Pedidos",
             path: "/pedidos",
-            roles: ["CLIENT"]
+            roles: ["CLIENTE", "ADMIN"]
         },
         {
             label: "Direcciones",
             path: "/direcciones",
-            roles: ["CLIENT"]
+            roles: ["CLIENTE"]
         },
         {
             label: "Carrito",
             path: "/carrito",
-            roles: ["CLIENT"]
+            roles: ["CLIENTE"]
+        },
+        {
+            label: "Ingredientes",
+            path: "/admin/ingredientes",
+            roles: ["ADMIN"]
+        },
+        {
+            label: "Categorias",
+            path: "/admin/categorias",
+            roles: ["ADMIN"]
         }
     ]
 
@@ -55,14 +80,14 @@ export const filtroitems: filtrosItems[] = [
         },
         {
             para:"Producto",
-            nombre: "id",
+            nombre: "ID",
             divisiones: ["Ascendente", "Descendente"],
             roles:  ["ADMIN"]
         },
         {
             para:"Producto",
-            nombre:"Habilitado",
-            divisiones: ["Esta habilitado", "Esta deshabilitado"],
+            nombre:"Estado",
+            divisiones: ["Habilitados", "Deshabilitados"],
             roles: ["ADMIN"]
         }
     ]

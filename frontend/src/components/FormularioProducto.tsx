@@ -1,28 +1,19 @@
 import React, { useEffect, useState } from 'react';
+import { Producto } from '../models/Producto';
 
 interface CategoriaOption { id: number; nombre: string; }
 interface IngredienteOption { id: number; nombre: string; unidad_medida_id: number; }
 interface CategoriaSeleccionada { categoriaId: number; nombre: string; }
 interface IngredienteSeleccionado { ingredienteId: number; nombre: string; cantidad: number; }
 
-interface ProductoEditar {
-  id: number;
-  nombre: string;
-  precio: number;
-  descripcion?: string;
-  disponible: boolean;
-  stock_cantidad: number;
-  categorias?: { id: number; nombre: string }[];
-  ingredientes?: { ingrediente_id: number; nombre: string; cantidad: number }[];
-}
-
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
-  productoEditar?: ProductoEditar;
+  productoEditar?: Producto;
 }
 
 export default function ModalNuevoProducto({ isOpen, onClose, productoEditar }: ModalProps) {
+  
   const [nombre, setNombre] = useState('');
   const [precio, setPrecio] = useState<number | ''>('');
   const [descripcion, setDescripcion] = useState('');
@@ -30,102 +21,189 @@ export default function ModalNuevoProducto({ isOpen, onClose, productoEditar }: 
   const [habilitado, setHabilitado] = useState(true);
   const [disponible, setDisponible] = useState(true);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [archivoImagen, setArchivoImagen] = useState<File | null>(null);
 
   const [categoriasDisponibles, setCategoriasDisponibles] = useState<CategoriaOption[]>([]);
   const [ingredientesDisponibles, setIngredientesDisponibles] = useState<IngredienteOption[]>([]);
   const [categoriasSeleccionadas, setCategoriasSeleccionadas] = useState<CategoriaSeleccionada[]>([]);
   const [ingredientesSeleccionados, setIngredientesSeleccionados] = useState<IngredienteSeleccionado[]>([]);
 
+  const [esProductoFinal, setEsProductoFinal] = useState(false);
+
   const [tempCategoriaId, setTempCategoriaId] = useState('');
   const [tempIngredienteId, setTempIngredienteId] = useState('');
   const [tempCantidadIngrediente, setTempCantidadIngrediente] = useState<number | ''>('');
 
-  useEffect(() => {
-    fetch('http://localhost:8000/categorias/', { credentials: 'include' })
-      .then(r => r.json()).then(setCategoriasDisponibles);
-    fetch('http://localhost:8000/ingredientes/', { credentials: 'include' })
-      .then(r => r.json()).then(setIngredientesDisponibles);
-  }, []);
-
-  useEffect(() => {
-    if (productoEditar) {
-      setNombre(productoEditar.nombre);
-      setPrecio(productoEditar.precio);
-      setDescripcion(productoEditar.descripcion ?? '');
-      setStockCantidad(productoEditar.stock_cantidad);
-      setDisponible(productoEditar.disponible);
-      setCategoriasSeleccionadas((productoEditar.categorias ?? []).map(c => ({ categoriaId: c.id, nombre: c.nombre })));
-      setIngredientesSeleccionados((productoEditar.ingredientes ?? []).map(i => ({ ingredienteId: i.ingrediente_id, nombre: i.nombre, cantidad: i.cantidad })));
-    } else {
-      setNombre(''); setPrecio(''); setDescripcion(''); setStockCantidad(0);
-      setDisponible(true); setHabilitado(true);
-      setCategoriasSeleccionadas([]); setIngredientesSeleccionados([]);
-      setPreviewUrl(null);
-    }
-  }, [productoEditar]);
-
-  if (!isOpen) return null;
-
-  const manejarImagen = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const archivo = e.target.files?.[0];
-    if (archivo) setPreviewUrl(URL.createObjectURL(archivo));
-  };
-
   const agregarCategoriaLista = () => {
-    if (!tempCategoriaId) return;
-    const cat = categoriasDisponibles.find(c => c.id === Number(tempCategoriaId));
-    if (cat && !categoriasSeleccionadas.some(c => c.categoriaId === cat.id)) {
-      setCategoriasSeleccionadas([...categoriasSeleccionadas, { categoriaId: cat.id, nombre: cat.nombre }]);
-      setTempCategoriaId('');
-    }
-  };
+  if (!tempCategoriaId) return;
 
-  const agregarIngredienteLista = () => {
-    if (!tempIngredienteId || !tempCantidadIngrediente) return;
-    const ing = ingredientesDisponibles.find(i => i.id === Number(tempIngredienteId));
-    if (ing && !ingredientesSeleccionados.some(i => i.ingredienteId === ing.id)) {
-      setIngredientesSeleccionados([...ingredientesSeleccionados, {
-        ingredienteId: ing.id,
-        nombre: ing.nombre,
+  const categoria = categoriasDisponibles.find(
+    c => c.id === Number(tempCategoriaId)
+  );
+
+  if (
+    categoria &&
+    !categoriasSeleccionadas.some(
+      c => c.categoriaId === categoria.id
+    )
+  ) {
+    setCategoriasSeleccionadas([
+      ...categoriasSeleccionadas,
+      {
+        categoriaId: categoria.id,
+        nombre: categoria.nombre,
+      },
+    ]);
+
+    setTempCategoriaId('');
+  }
+};
+
+  useEffect(() => {
+  if (productoEditar) {
+    setNombre(productoEditar.nombre);
+    setPrecio(productoEditar.precio);
+    setDescripcion(productoEditar.descripcion ?? "");
+    setStockCantidad(productoEditar.stock_cantidad);
+    setDisponible(productoEditar.disponible);
+    setHabilitado(productoEditar.habilitado);
+
+    setPreviewUrl(productoEditar.imagenes_url[0] ?? null);
+
+    setCategoriasSeleccionadas(
+      productoEditar.categorias.map(c => ({
+        categoriaId: c.id,
+        nombre: c.nombre,
+      }))
+    );
+
+    setIngredientesSeleccionados(
+      productoEditar.ingredientes.map(i => ({
+        ingredienteId: i.ingrediente_id,
+        nombre: i.nombre,
+        cantidad: i.cantidad,
+      }))
+    );
+  } else {
+    setNombre("");
+    setPrecio("");
+    setDescripcion("");
+    setStockCantidad(0);
+    setDisponible(true);
+    setHabilitado(true);
+    setEsProductoFinal(false);
+
+    setCategoriasSeleccionadas([]);
+    setIngredientesSeleccionados([]);
+
+    setPreviewUrl(null);
+    setArchivoImagen(null);
+  }
+}, [productoEditar]);
+
+const agregarIngredienteLista = () => {
+  if (!tempIngredienteId || !tempCantidadIngrediente) return;
+
+  const ingrediente = ingredientesDisponibles.find(
+    i => i.id === Number(tempIngredienteId)
+  );
+
+  if (
+    ingrediente &&
+    !ingredientesSeleccionados.some(
+      i => i.ingredienteId === ingrediente.id
+    )
+  ) {
+    setIngredientesSeleccionados([
+      ...ingredientesSeleccionados,
+      {
+        ingredienteId: ingrediente.id,
+        nombre: ingrediente.nombre,
         cantidad: Number(tempCantidadIngrediente),
-      }]);
-      setTempIngredienteId('');
-      setTempCantidadIngrediente('');
-    }
+      },
+    ]);
+
+    setTempIngredienteId('');
+    setTempCantidadIngrediente('');
+  }
+};
+
+
+const manejarImagen = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const archivo = e.target.files?.[0];
+
+
+  if (archivo) {
+    setArchivoImagen(archivo);
+    setPreviewUrl(URL.createObjectURL(archivo));
+  }
+};
+
+const manejarEnvioFormulario = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+
+  const payload = {
+    nombre,
+    precio: Number(precio),
+    descripcion: descripcion || null,
+    disponible,
+    habilitado,
+    stock_cantidad: stockCantidad,
+    imagenes_url: productoEditar?.imagenes_url ?? [],
+    categorias: categoriasSeleccionadas.map(c => ({
+      id: c.categoriaId,
+    })),
+    ingredientes: esProductoFinal
+      ? []
+      : ingredientesSeleccionados.map(i => ({
+          ingrediente_id: i.ingredienteId,
+          cantidad: i.cantidad,
+        })),
   };
 
-  const manejarEnvioFormulario = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const url = productoEditar
+    ? `http://localhost:8000/productos/${productoEditar.id}`
+    : "http://localhost:8000/productos/";
 
-    const payload = {
-      nombre,
-      precio: Number(precio),
-      descripcion: descripcion || null,
-      disponible,
-      stock_cantidad: stockCantidad,
-      categoria_ids: categoriasSeleccionadas.map(c => c.categoriaId),
-      ingredientes: ingredientesSeleccionados.map(i => ({ ingrediente_id: i.ingredienteId, cantidad: i.cantidad })),
-    };
+  const method = productoEditar ? "PUT" : "POST";
 
-    const url = productoEditar
-      ? `http://localhost:8000/productos/${productoEditar.id}`
-      : 'http://localhost:8000/productos/';
-    const method = productoEditar ? 'PUT' : 'POST';
+  const res = await fetch(url, {
+    method,
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
 
-    const res = await fetch(url, {
-      method,
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+  if (!res.ok) return;
 
-    if (res.ok) onClose();
-  };
+  const productoGuardado = await res.json();
 
+  if (archivoImagen) {
+    const formData = new FormData();
+    formData.append("imagen", archivoImagen);
+
+    await fetch(
+      `http://localhost:8000/productos/${productoGuardado.id}/imagen`,
+      {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      }
+    );
+  }
+
+  onClose();
+};
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Capa de desenfoque de fondo */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-xs" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-xs z-0"
+        onClick={onClose}
+      />
 
       {/* Ventana Modal (Configurada con scroll vertical interno sutil) */}
       <div className="relative w-full max-w-md bg-white rounded-2xl border border-gray-100 shadow-xl p-5 space-y-4 z-10 max-h-[90vh] overflow-y-auto scrollbar-hide font-sans antialiased">
@@ -164,43 +242,145 @@ export default function ModalNuevoProducto({ isOpen, onClose, productoEditar }: 
           {/* RELACIÓN 1: PRODUCTO - CATEGORÍA (Muchos a Muchos) */}
           {/* ========================================================================= */}
           <div className="space-y-2 bg-[#FAFAFA] p-2.5 rounded-xl border border-gray-100/40">
-            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Enlazar Categorías</label>
+            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+              Enlazar Categorías
+            </label>
+
             <div className="flex gap-2">
-              <select value={tempCategoriaId} onChange={(e) => setTempCategoriaId(e.target.value)} className="flex-grow px-2 py-1.5 text-xs bg-white border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none font-medium cursor-pointer">
+              <select
+                value={tempCategoriaId}
+                onChange={(e) => setTempCategoriaId(e.target.value)}
+                className="flex-grow px-2 py-1.5 text-xs bg-white border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none font-medium cursor-pointer"
+              >
                 <option value="">Selecciona una categoría...</option>
-                {categoriasDisponibles.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+
+                {categoriasDisponibles.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.nombre}
+                  </option>
+                ))}
               </select>
-              <button type="button" onClick={agregarCategoriaLista} className="bg-[#1E1E24] text-white text-xs font-bold px-3 rounded-xl hover:bg-[#FFB703] hover:text-[#1E1E24] transition-colors cursor-pointer">+</button>
+
+              <button
+                type="button"
+                onClick={agregarCategoriaLista}
+                className="bg-[#1E1E24] text-white text-xs font-bold px-3 rounded-xl hover:bg-[#FFB703] hover:text-[#1E1E24] transition-colors cursor-pointer"
+              >
+                +
+              </button>
             </div>
-            {/* Badges sutiles de categorías seleccionadas */}
+
             <div className="flex flex-wrap gap-1.5 pt-1">
               {categoriasSeleccionadas.map(c => (
-                <span key={c.categoriaId} className="inline-flex items-center text-[10px] font-bold bg-white text-[#1E1E24] border border-gray-100 px-2 py-0.5 rounded-md gap-1 shadow-2xs">
+                <span
+                  key={c.categoriaId}
+                  className="inline-flex items-center text-[10px] font-bold bg-white text-[#1E1E24] border border-gray-100 px-2 py-0.5 rounded-md gap-1 shadow-2xs"
+                >
                   {c.nombre}
-                  <button type="button" onClick={() => setCategoriasSeleccionadas(categoriasSeleccionadas.filter(item => item.categoriaId !== c.categoriaId))} className="text-[#E63946] font-black cursor-pointer">×</button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setCategoriasSeleccionadas(
+                        categoriasSeleccionadas.filter(
+                          item => item.categoriaId !== c.categoriaId
+                        )
+                      )
+                    }
+                    className="text-[#E63946] font-black cursor-pointer"
+                  >
+                    ×
+                  </button>
                 </span>
               ))}
             </div>
           </div>
-
           {/* ========================================================================= */}
           {/* RELACIÓN 2: PRODUCTO - INGREDIENTE (Muchos a Muchos con Atributo Cantidad) */}
           {/* ========================================================================= */}
+          <div className="flex items-center space-x-2 select-none">
+            <label className="relative flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={ingredientesSeleccionados.length === 0}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setIngredientesSeleccionados([]);
+                  }
+                }}
+                className="sr-only peer"
+              />
+
+              <div className="w-7 h-4 bg-gray-200 rounded-full peer peer-focus:outline-none peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500"></div>
+            </label>
+
+            <span className="text-[10px] font-bold text-[#1E1E24] uppercase tracking-wide">
+              Producto sin ingredientes (ej: gaseosa, postre envasado)
+            </span>
+          </div>
           <div className="space-y-2 bg-[#FAFAFA] p-2.5 rounded-xl border border-gray-100/40">
-            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Ingredientes</label>
+            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+              Ingredientes
+            </label>
+
             <div className="grid grid-cols-5 gap-2">
-              <select value={tempIngredienteId} onChange={(e) => setTempIngredienteId(e.target.value)} className="col-span-3 px-2 py-1.5 text-xs bg-white border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none font-medium cursor-pointer">
+              <select
+                value={tempIngredienteId}
+                onChange={(e) => setTempIngredienteId(e.target.value)}
+                className="col-span-3 px-2 py-1.5 text-xs bg-white border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none font-medium cursor-pointer"
+              >
                 <option value="">Ingrediente...</option>
-                {ingredientesDisponibles.map(i => <option key={i.id} value={i.id}>{i.nombre}</option>)}
+
+                {ingredientesDisponibles.map(i => (
+                  <option key={i.id} value={i.id}>
+                    {i.nombre}
+                  </option>
+                ))}
               </select>
-              <input type="number" step="0.01" value={tempCantidadIngrediente} onChange={(e) => setTempCantidadIngrediente(e.target.value === '' ? '' : Number(e.target.value))} placeholder="Cant." className="col-span-1 px-2 py-1.5 text-xs bg-white border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none font-medium" />
-              <button type="button" onClick={agregarIngredienteLista} className="col-span-1 bg-[#1E1E24] text-white text-xs font-bold rounded-xl hover:bg-[#FFB703] hover:text-[#1E1E24] transition-colors cursor-pointer">+</button>
+
+              <input
+                type="number"
+                step="0.01"
+                value={tempCantidadIngrediente}
+                onChange={(e) =>
+                  setTempCantidadIngrediente(
+                    e.target.value === "" ? "" : Number(e.target.value)
+                  )
+                }
+                placeholder="Cant."
+                className="col-span-1 px-2 py-1.5 text-xs bg-white border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none font-medium"
+              />
+
+              <button
+                type="button"
+                onClick={agregarIngredienteLista}
+                className="col-span-1 bg-[#1E1E24] text-white text-xs font-bold rounded-xl hover:bg-[#FFB703] hover:text-[#1E1E24] transition-colors cursor-pointer"
+              >
+                +
+              </button>
             </div>
+
             <div className="flex flex-wrap gap-1.5 pt-1">
               {ingredientesSeleccionados.map(i => (
-                <span key={i.ingredienteId} className="inline-flex items-center text-[10px] font-bold bg-white text-[#1E1E24] border border-gray-100 px-2 py-0.5 rounded-md gap-1 shadow-2xs">
+                <span
+                  key={i.ingredienteId}
+                  className="inline-flex items-center text-[10px] font-bold bg-white text-[#1E1E24] border border-gray-100 px-2 py-0.5 rounded-md gap-1 shadow-2xs"
+                >
                   {i.nombre} ({i.cantidad})
-                  <button type="button" onClick={() => setIngredientesSeleccionados(ingredientesSeleccionados.filter(item => item.ingredienteId !== i.ingredienteId))} className="text-[#E63946] font-black cursor-pointer">×</button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setIngredientesSeleccionados(
+                        ingredientesSeleccionados.filter(
+                          item => item.ingredienteId !== i.ingredienteId
+                        )
+                      )
+                    }
+                    className="text-[#E63946] font-black cursor-pointer"
+                  >
+                    ×
+                  </button>
                 </span>
               ))}
             </div>
@@ -228,7 +408,7 @@ export default function ModalNuevoProducto({ isOpen, onClose, productoEditar }: 
                 </div>
                 <label className="bg-white border border-gray-200 hover:border-[#FFB703] text-gray-500 font-bold text-[10px] py-1.5 px-2.5 rounded-xl transition-all cursor-pointer shadow-2xs">
                   <span>Subir</span>
-                  <input type="file" accept="image/*" className="hidden" onChange={manejarImagen} />
+                  <input type="file" accept="image/webp image/jpeg image/" className="hidden" onChange={manejarImagen} />
                 </label>
               </div>
             </div>

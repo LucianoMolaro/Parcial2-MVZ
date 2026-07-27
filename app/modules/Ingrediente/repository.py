@@ -1,5 +1,5 @@
 from typing import List, Optional
-from sqlmodel import Session, select
+from sqlmodel import Session, func, select
 
 from app.core.Repository import Repository
 from app.modules.Ingrediente.model import Ingrediente
@@ -12,6 +12,10 @@ class IngredienteRepository(Repository[Ingrediente]):
     def get_by_id_locked(self, ingrediente_id: int) -> Optional[Ingrediente]:
         stmt = select(Ingrediente).where(Ingrediente.id == ingrediente_id).with_for_update()
         return self._session.exec(stmt).first()
+    
+    
+    def get_by_nombre(self, nombre: str):
+        return self._session.exec(select(Ingrediente).where(func.lower(Ingrediente.nombre) == nombre.lower())).first()
 
     def get_all_filtrado(
         self,

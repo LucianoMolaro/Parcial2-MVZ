@@ -1,19 +1,23 @@
 import { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuthUser } from "../context/AuthContext";
+import { BsCart3 } from 'react-icons/bs'
 import { menuItems, menuitems as todasLasOpciones} from "../models/OpcionesItems"
-
+import { useCarrito } from "../context/CarritoContext";
 
 export default function BarraNavegacion(){
   const { user } = useAuthUser() 
+  const { state } = useCarrito()
   const [MenuDesplegable, setMenuDesplegable] = useState(false)
   const [items, setItems] = useState<menuItems[]>([])
   const navigate  = useNavigate()
-  const logeado = true
 
   useEffect(()=>{
-        const roles = user?.roles.map(rol => rol.codigo) ?? ["CLIENT"];
-        const menuVisibles = todasLasOpciones.filter(item => roles?.some(rol => item.roles.includes(rol)));
+        let roles: string[];
+        if (!user) roles = ["GUEST"];
+        else if (user.roles.length === 0) roles = ["CLIENT"];
+        else roles = user.roles.map(rol => rol.codigo);
+        const menuVisibles = todasLasOpciones.filter(item => roles.some(rol => item.roles.includes(rol)));
         setItems(menuVisibles)
       }, [user])
   
@@ -62,23 +66,24 @@ export default function BarraNavegacion(){
           {/* Botones de Usuario / Carrito */}
           <div className="flex items-center space-x-4">
             {/* Carrito */}
-            <button onClick={()=>{navigate("/carrito")}} className="relative h-10 w-10 bg-[#E63946] text-white p-1 rounded-full hover:bg-opacity-90 transition-all flex items-center justify-center">
+            <button onClick={()=>{navigate("/carrito")}} className="relative bg-[#E63946] text-white p-2 rounded-full hover:bg-opacity-90 transition-all flex items-center justify-center">
               {/* <svg xmlns="http://w3.org" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg> */}
-              <div className='font-[iconsTwo]'>[</div>
+              {/* <div className='font-[iconsTwo]'>[</div> */}
+              <BsCart3 className="h-5 w-5"></BsCart3>
               <span className="absolute -top-1 -right-1 bg-[#FFB703] text-[#1E1E24] font-bold text-xs w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">
-                0
+                {state.totalUnidades}
               </span>
             </button>
             
             {/* Login */}
-            {logeado ? (
+            {!!user ? (
               <button className="hidden sm:flex items-center space-x-1 font-bold text-sm bg-[#1E1E24] text-white px-4 py-2.5 rounded-full hover:bg-opacity-90 transition-all" onClick={()=>{navigate("/login")}}>
               <svg xmlns="http://w3.org" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
-              <span>User</span>
+              <span>{user.nombre}</span>
             </button>
             ) : (
               <button className="hidden sm:flex items-center space-x-1 font-bold text-sm bg-[#1E1E24] text-white px-4 py-2.5 rounded-full hover:bg-opacity-90 transition-all" onClick={()=>{navigate("/login")}}>

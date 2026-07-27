@@ -10,8 +10,8 @@ class Repository(Generic[T]):
         self._session = session
         self._model = model
 
-    def get_all(self, offset: int = 0) -> List[T]:
-        return self._session.exec(select(self._model).offset(offset).limit(7)).all()
+    def get_all(self) -> List[T]:
+        return self._session.exec(select(self._model)).all()
 
     def get_by_id(self, id: int) -> Optional[T]:
         return self._session.get(self._model, id)

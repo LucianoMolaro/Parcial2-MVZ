@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import TYPE_CHECKING, Optional
-from sqlmodel import SMALLINT, Field, Relationship, SQLModel
+from sqlmodel import JSON, SMALLINT, Column, Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
     from app.modules.Pedido.model import Pedido
@@ -16,10 +16,12 @@ class DetallePedido(SQLModel, table=True):
     nombre: str = Field(max_length=200)
     precio: Decimal = Field(max_digits=10, decimal_places=2)
     subtotal: Decimal = Field(max_digits=10, decimal_places=2)
-    personalizacion: Optional[int] = Field(default=None)
+    personalizacion: list[int] = Field(default=[], sa_column=Column(JSON))
+    personalizacion_nombres: list[str] = Field(default=[], sa_column=Column(JSON))
 
     pedido: Optional["Pedido"] = Relationship(back_populates="detalles")
     producto: Optional["Producto"] = Relationship(back_populates="detalles")
 
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
     
