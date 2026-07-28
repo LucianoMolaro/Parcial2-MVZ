@@ -7,7 +7,6 @@ from app.core.WsManager import ws_manager, WsEvent
 from app.modules.Usuario.model import Usuario
 from app.modules.Pedido.schema import PedidoCambiarEstado, PedidoCreate, PedidoRead
 from app.modules.Pedido import service as pedido_service
-from app.modules.Pago import service as pago_service
 
 router = APIRouter(prefix="/pedidos", tags=["Pedidos"])
 
@@ -27,6 +26,13 @@ def listar_pedidos(
     filtro = None if any(r in ["ADMIN", "PEDIDOS"] for r in roles) else current_user.id
     return pedido_service.get_all(uow, filtro, offset, limit)
 
+@router.get("/usuario", response_model=List[PedidoRead])
+def listar_pedidos(
+    uow: UnitOfWork = Depends(get_uow),
+    current_user: Usuario = Depends(get_current_active_user),
+):
+    return uow.pedidos.get_pedidos_usuario(current_user)
+
 
 @router.get("/{pedido_id}", response_model=PedidoRead)
 def obtener_pedido(
@@ -41,13 +47,17 @@ def obtener_pedido(
     return pedido
 
 
-@router.post("/crear", status_code=201)
+@router.post("/crear", response_model=PedidoRead, status_code=201)
 async def crear_pedido(
-    # datos: PedidoCreate,
-    # uow: UnitOfWork = Depends(get_uow),
-    # current_user: Usuario = Depends(get_current_active_user),
+    datos: PedidoCreate,
+    uow: UnitOfWork = Depends(get_uow),
+    current_user: Usuario = Depends(get_current_active_user),
 ):
-    return await pedido_service.crear_pedido()
+    pedido, init_point = await pedido_service.crear_pedido(uow, datos, current_user.id)
+
+    respuesta = PedidoRead.model_validate(pedido, from_attributes=True)
+    respuesta.init_point = init_point
+    return respuesta
 
 
 @router.patch("/{pedido_id}/estado", response_model=PedidoRead)
@@ -61,16 +71,14 @@ async def cambiar_estado(
     es_cliente = not any(r in ["ADMIN", "PEDIDOS"] for r in roles)
     pedido = pedido_service.cambiar_estado(uow, pedido_id, datos, current_user.id, es_cliente)
 
-    evento = WsEvent(
-        event_type="pedido_estado_actualizado",
-        data={
+    await ws_manager.broadcast(
+        {
             "pedido_id": pedido.id,
             "usuario_id": pedido.usuario_id,
             "estado_codigo": pedido.estado_codigo,
         },
+        "pedido_estado_actualizado",
     )
-    await ws_manager.send_to_room("pedidos_admin", evento)
-    await ws_manager.send_to_room(f"pedido_{pedido.usuario_id}", evento)
 
     return pedido
 

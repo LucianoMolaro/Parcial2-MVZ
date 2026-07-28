@@ -178,18 +178,16 @@ export function WebSocketProvider({ children }: { children: ReactNode }){
           console.log("🟢 WebSocket conectado");
         };
 
-
         ws.onmessage = (event) => {
-          console.log("🔥 LLEGÓ WS:", event.data)
           const message = JSON.parse(event.data)
           setLastEvent(message)
         }
+
         ws.onclose = () => {
           console.log("WS cerrado")
         }
 
         return () => {
-          console.log("🧹 Cerrando WS desde React")
           ws.close()
         }
     }, [])

@@ -4,15 +4,22 @@ from sqlmodel import SQLModel
 from app.modules.Categoria.schema import CategoriaSchema
 from app.modules.ProductoIngrediente.schema import ProductoIngredienteRead
 
+
 class ProductoCarrito(SQLModel):
     id: int
     cantidad: int
     personalizacion: list[int]
 
 
+class ProductoCategoriaInput(SQLModel):
+    categoria_id: int
+    principal: bool = False
+
+
 class ProductoIngredienteInput(SQLModel):
     ingrediente_id: int
     cantidad: float
+    es_removible: bool = False
 
 
 class ProductoDisponibilidadUpdate(SQLModel):
@@ -26,7 +33,7 @@ class ProductoCreate(SQLModel):
     descripcion: Optional[str] = None
     disponible: bool = True
     stock_cantidad: int = 0
-    categoria_ids: list[int] = []
+    categorias: list[ProductoCategoriaInput] = []
     ingredientes: list[ProductoIngredienteInput] = []
 
 

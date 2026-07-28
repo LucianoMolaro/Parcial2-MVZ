@@ -1,202 +1,214 @@
-import React, { useEffect, useState } from 'react';
-import { Producto } from '../models/Producto';
+import { useState, useEffect } from "react";
+import { BsPlus } from "react-icons/bs";
+import { Producto } from "../models/Producto";
+import { cloudinary } from "../models/Cloudinary";
+import { Categoria } from "../models/Categoria";
+import { Ingrediente } from "../models/Ingrediente";
+import { ProductoIngredienteRead } from "../models/ProductoIngrediente";
 
-interface CategoriaOption { id: number; nombre: string; }
-interface IngredienteOption { id: number; nombre: string; unidad_medida_id: number; }
-interface CategoriaSeleccionada { categoriaId: number; nombre: string; }
-interface IngredienteSeleccionado { ingredienteId: number; nombre: string; cantidad: number; }
+// Ajustá estas rutas de import a donde realmente tengas cada archivo en tu proyecto
 
-interface ModalProps {
+
+// Selección de categoría en construcción (camino padre -> hijo + cuál es la principal)
+type CategoriaSeleccionada = {
+  categoriaId: number;
+  nombre: string;
+  principal: boolean;
+};
+
+type ModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  productoEditar?: Producto;
-}
+  productoEditar?: Producto | null;
+};
+
+// La sesión viaja por cookie (httpOnly) + AuthContext, no por localStorage.
+// Por eso alcanza con mandar credentials: "include" en cada fetch protegido.
+const AUTH_FETCH: RequestInit = { credentials: "include" };
 
 export default function ModalNuevoProducto({ isOpen, onClose, productoEditar }: ModalProps) {
-  
-  const [nombre, setNombre] = useState('');
-  const [precio, setPrecio] = useState<number | ''>('');
-  const [descripcion, setDescripcion] = useState('');
-  const [stockCantidad, setStockCantidad] = useState<number>(0);
-  const [habilitado, setHabilitado] = useState(true);
-  const [disponible, setDisponible] = useState(true);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [archivoImagen, setArchivoImagen] = useState<File | null>(null);
-
-  const [categoriasDisponibles, setCategoriasDisponibles] = useState<CategoriaOption[]>([]);
-  const [ingredientesDisponibles, setIngredientesDisponibles] = useState<IngredienteOption[]>([]);
-  const [categoriasSeleccionadas, setCategoriasSeleccionadas] = useState<CategoriaSeleccionada[]>([]);
-  const [ingredientesSeleccionados, setIngredientesSeleccionados] = useState<IngredienteSeleccionado[]>([]);
-
-  const [esProductoFinal, setEsProductoFinal] = useState(false);
-
-  const [tempCategoriaId, setTempCategoriaId] = useState('');
-  const [tempIngredienteId, setTempIngredienteId] = useState('');
-  const [tempCantidadIngrediente, setTempCantidadIngrediente] = useState<number | ''>('');
-
-  const agregarCategoriaLista = () => {
-  if (!tempCategoriaId) return;
-
-  const categoria = categoriasDisponibles.find(
-    c => c.id === Number(tempCategoriaId)
-  );
-
-  if (
-    categoria &&
-    !categoriasSeleccionadas.some(
-      c => c.categoriaId === categoria.id
-    )
-  ) {
-    setCategoriasSeleccionadas([
-      ...categoriasSeleccionadas,
-      {
-        categoriaId: categoria.id,
-        nombre: categoria.nombre,
-      },
-    ]);
-
-    setTempCategoriaId('');
-  }
-};
-
-  useEffect(() => {
-  if (productoEditar) {
-    setNombre(productoEditar.nombre);
-    setPrecio(productoEditar.precio);
-    setDescripcion(productoEditar.descripcion ?? "");
-    setStockCantidad(productoEditar.stock_cantidad);
-    setDisponible(productoEditar.disponible);
-    setHabilitado(productoEditar.habilitado);
-
-    setPreviewUrl(productoEditar.imagenes_url[0] ?? null);
-
-    setCategoriasSeleccionadas(
-      productoEditar.categorias.map(c => ({
-        categoriaId: c.id,
-        nombre: c.nombre,
-      }))
-    );
-
-    setIngredientesSeleccionados(
-      productoEditar.ingredientes.map(i => ({
-        ingredienteId: i.ingrediente_id,
-        nombre: i.nombre,
-        cantidad: i.cantidad,
-      }))
-    );
-  } else {
-    setNombre("");
-    setPrecio("");
-    setDescripcion("");
-    setStockCantidad(0);
-    setDisponible(true);
-    setHabilitado(true);
-    setEsProductoFinal(false);
-
-    setCategoriasSeleccionadas([]);
-    setIngredientesSeleccionados([]);
-
-    setPreviewUrl(null);
-    setArchivoImagen(null);
-  }
-}, [productoEditar]);
-
-const agregarIngredienteLista = () => {
-  if (!tempIngredienteId || !tempCantidadIngrediente) return;
-
-  const ingrediente = ingredientesDisponibles.find(
-    i => i.id === Number(tempIngredienteId)
-  );
-
-  if (
-    ingrediente &&
-    !ingredientesSeleccionados.some(
-      i => i.ingredienteId === ingrediente.id
-    )
-  ) {
-    setIngredientesSeleccionados([
-      ...ingredientesSeleccionados,
-      {
-        ingredienteId: ingrediente.id,
-        nombre: ingrediente.nombre,
-        cantidad: Number(tempCantidadIngrediente),
-      },
-    ]);
-
-    setTempIngredienteId('');
-    setTempCantidadIngrediente('');
-  }
-};
-
-
-const manejarImagen = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const archivo = e.target.files?.[0];
-
-
-  if (archivo) {
-    setArchivoImagen(archivo);
-    setPreviewUrl(URL.createObjectURL(archivo));
-  }
-};
-
-const manejarEnvioFormulario = async (e: React.FormEvent) => {
-  e.preventDefault();
-  
-
-  const payload = {
-    nombre,
-    precio: Number(precio),
-    descripcion: descripcion || null,
-    disponible,
-    habilitado,
-    stock_cantidad: stockCantidad,
-    imagenes_url: productoEditar?.imagenes_url ?? [],
-    categorias: categoriasSeleccionadas.map(c => ({
-      id: c.categoriaId,
-    })),
-    ingredientes: esProductoFinal
-      ? []
-      : ingredientesSeleccionados.map(i => ({
-          ingrediente_id: i.ingredienteId,
-          cantidad: i.cantidad,
-        })),
-  };
-
-  const url = productoEditar
-    ? `http://localhost:8000/productos/${productoEditar.id}`
-    : "http://localhost:8000/productos/";
-
-  const method = productoEditar ? "PUT" : "POST";
-
-  const res = await fetch(url, {
-    method,
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
+  const [imagenes, setImagenes] = useState<cloudinary[]>([]);
+  const [subiendo, setSubiendo] = useState(false);
+  const [formulario, setFormulario] = useState({
+    nombre: "",
+    precio: 0,
+    descripcion: "",
+    stock_cantidad: 0,
+    imagenes_url: [] as string[],
   });
 
-  if (!res.ok) return;
+  // Producto final (sin ingredientes): el stock se carga a mano.
+  // Producto con ingredientes: el stock lo calcula el back según el stock de cada ingrediente.
+  const [sinIngredientes, setSinIngredientes] = useState(false);
 
-  const productoGuardado = await res.json();
+  // ---- Categorías (recursivo: arma un único camino padre -> hijo) ----
+  const [categorias, setCategorias] = useState<Categoria[]>([]); // opciones del nivel actual
+  const [tempCategoriaId, setTempCategoriaId] = useState("");
+  const [categoriasSeleccionadas, setCategoriasSeleccionadas] = useState<CategoriaSeleccionada[]>([]);
 
-  if (archivoImagen) {
+  // ---- Ingredientes ----
+  const [ingredientesDisponibles, setIngredientesDisponibles] = useState<Ingrediente[]>([]);
+  const [tempIngredienteId, setTempIngredienteId] = useState("");
+  const [tempCantidadIngrediente, setTempCantidadIngrediente] = useState<number | "">("");
+  const [ingredientesSeleccionados, setIngredientesSeleccionados] = useState<ProductoIngredienteRead[]>([]);
+
+  const subirUnaImagen = async (archivo: File): Promise<cloudinary> => {
     const formData = new FormData();
-    formData.append("imagen", archivoImagen);
+    formData.append("file", archivo);
+    formData.append("folder", "prueba");
 
-    await fetch(
-      `http://localhost:8000/productos/${productoGuardado.id}/imagen`,
-      {
-        method: "POST",
-        credentials: "include",
-        body: formData,
-      }
+    const resp = await fetch("http://localhost:8000/cloudinary/upload", {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
+
+    if (!resp.ok) throw new Error(`Error al subir: ${resp.status}`);
+
+    const data: { ok: boolean; url: string; public_id: string } = await resp.json();
+    if (!data.ok) throw new Error("El servidor indicó que la subida falló");
+
+    return { url: data.url, public_id: data.public_id };
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const archivos = e.target.files;
+    if (!archivos || archivos.length === 0) return;
+
+    setSubiendo(true);
+
+    const subidas = await Promise.all(
+      Array.from(archivos).map((archivo) => subirUnaImagen(archivo))
     );
-  }
 
-  onClose();
-};
+    setImagenes((prev) => [...prev, ...subidas]);
+    setSubiendo(false);
+    e.target.value = "";
+  };
+
+  // Si es edición, precargar los datos del producto
+  useEffect(() => {
+    if (productoEditar) {
+      setFormulario({
+        nombre: productoEditar.nombre,
+        precio: productoEditar.precio,
+        descripcion: productoEditar.descripcion ?? "",
+        stock_cantidad: productoEditar.stock_cantidad,
+        imagenes_url: productoEditar.imagenes_url,
+      });
+      setImagenes(productoEditar.imagenes_url.map((url) => ({ url, public_id: "" })));
+      setSinIngredientes(productoEditar.ingredientes.length === 0);
+
+      // El producto trae categorías planas (sin marca de "principal" ni orden de camino).
+      // Se cargan tal cual, marcando la primera como principal por defecto.
+      setCategoriasSeleccionadas(
+        productoEditar.categorias.map((c: Categoria, index: number) => ({
+          categoriaId: c.id,
+          nombre: c.nombre,
+          principal: index === 0,
+        }))
+      );
+
+      setIngredientesSeleccionados(productoEditar.ingredientes);
+    }
+  }, [productoEditar]);
+
+  // Traer ingredientes disponibles una sola vez
+  useEffect(() => {
+    fetch("http://localhost:8000/ingredientes", AUTH_FETCH)
+      .then((res) => res.json())
+      .then((data) => setIngredientesDisponibles(Array.isArray(data) ? data : []));
+  }, []);
+
+  // Traer las opciones de categoría del nivel correspondiente:
+  // - si todavía no se eligió ninguna, trae las categorías raíz
+  // - si ya se eligió una, trae las subcategorías de la última elegida
+  // Así se arma un único camino (padre -> hijo) y no se pueden mezclar
+  // ramas distintas (ej: Pizza y Hamburguesa) en la misma selección.
+  useEffect(() => {
+    const ultima = categoriasSeleccionadas[categoriasSeleccionadas.length - 1];
+    const url = ultima
+      ? `http://localhost:8000/categorias/?parent_id=${ultima.categoriaId}`
+      : `http://localhost:8000/categorias/`;
+
+    fetch(url, AUTH_FETCH)
+      .then((res) => res.json())
+      .then((data) => setCategorias(Array.isArray(data) ? data : []));
+
+    setTempCategoriaId("");
+  }, [categoriasSeleccionadas]);
+
+  const agregarCategoriaLista = () => {
+    if (!tempCategoriaId) return;
+    const categoria = categorias.find((c) => c.id === Number(tempCategoriaId));
+    if (!categoria) return;
+
+    setCategoriasSeleccionadas((prev) => [
+      ...prev,
+      { categoriaId: categoria.id, nombre: categoria.nombre, principal: prev.length === 0 },
+    ]);
+  };
+
+  // Quitar una categoría del camino: también se quitan las que se
+  // agregaron después de ella, porque dependen de esa como su "padre".
+  const quitarCategoria = (categoriaId: number) => {
+    setCategoriasSeleccionadas((prev) => {
+      const index = prev.findIndex((c) => c.categoriaId === categoriaId);
+      return prev.slice(0, index);
+    });
+  };
+
+  const marcarComoPrincipal = (categoriaId: number) => {
+    setCategoriasSeleccionadas((prev) =>
+      prev.map((c) => ({ ...c, principal: c.categoriaId === categoriaId }))
+    );
+  };
+
+  const agregarIngredienteLista = () => {
+    if (!tempIngredienteId || tempCantidadIngrediente === "") return;
+    const ingrediente = ingredientesDisponibles.find((i) => i.id === Number(tempIngredienteId));
+    if (!ingrediente) return;
+
+    setIngredientesSeleccionados((prev) => [
+      ...prev,
+      {
+        ingrediente_id: ingrediente.id,
+        nombre: ingrediente.nombre,
+        cantidad: tempCantidadIngrediente,
+        es_removible: true, // valor por defecto, simple
+      },
+    ]);
+    setTempIngredienteId("");
+    setTempCantidadIngrediente("");
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const payload = {
+      ...formulario,
+      imagenes_url: imagenes.map((i) => i.url),
+      categorias: categoriasSeleccionadas.map((c) => ({
+        categoria_id: c.categoriaId,
+        principal: c.principal,
+      })),
+      ingredientes: ingredientesSeleccionados,
+    };
+
+    const url = productoEditar
+      ? `http://localhost:8000/productos/${productoEditar.id}`
+      : "http://localhost:8000/productos";
+
+    await fetch(url, {
+      method: productoEditar ? "PUT" : "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(payload),
+    });
+
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Capa de desenfoque de fondo */}
@@ -212,34 +224,34 @@ const manejarEnvioFormulario = async (e: React.FormEvent) => {
         <div className="flex items-start justify-between border-b border-gray-50 pb-2">
           <div>
             <h2 className="text-base font-black text-[#1E1E24] tracking-tight">
-              {productoEditar ? 'Editar' : 'Nuevo'} <span className="text-[#E63946]">Producto Menú</span>
+              {productoEditar ? 'Editar' : 'Nuevo'} <span className="text-[#E63946]">Producto</span>
             </h2>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-[#E63946] font-black text-sm p-1 cursor-pointer">✕</button>
         </div>
 
-        <form onSubmit={manejarEnvioFormulario} className="space-y-3.5">
+        <form className="space-y-3.5" onSubmit={handleSubmit}>
 
           {/* Fila Doble: Nombre y Precio */}
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-2 space-y-1">
-              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Nombre del Plato</label>
-              <input type="text" required value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej: Bacon Cheeseburger" className="w-full px-2.5 py-1.5 text-xs bg-[#FAFAFA] border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none focus:border-[#FFB703] font-medium" />
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Nombre</label>
+              <input type="text" required value={formulario.nombre} onChange={e => setFormulario({...formulario, nombre: e.target.value})} className="w-full px-2.5 py-1.5 text-xs bg-[#FAFAFA] border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none focus:border-[#FFB703] font-medium" />
             </div>
             <div className="space-y-1">
               <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Precio ($)</label>
-              <input type="number" step="0.01" required value={precio} onChange={(e) => setPrecio(e.target.value === '' ? '' : Number(e.target.value))} placeholder="8.99" className="w-full px-2.5 py-1.5 text-xs bg-[#FAFAFA] border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none focus:border-[#FFB703] font-medium" />
+              <input type="number" step="0.1" required value={formulario.precio} onChange={e=>setFormulario({...formulario, precio: Number(e.target.value)})} className="w-full px-2.5 py-1.5 text-xs bg-[#FAFAFA] border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none focus:border-[#FFB703] font-medium" />
             </div>
           </div>
 
           {/* Descripción */}
           <div className="space-y-1">
-            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Descripción Breve</label>
-            <textarea rows={2} value={descripcion} onChange={(e) => setDescripcion(e.target.value)} placeholder="Detalla los componentes del plato..." className="w-full px-2.5 py-1.5 text-xs bg-[#FAFAFA] border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none focus:border-[#FFB703] font-medium resize-none" />
+            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Descripción</label>
+            <textarea rows={2} value={formulario.descripcion} onChange={(e) => setFormulario({...formulario, descripcion: e.target.value})} className="w-full px-2.5 py-1.5 text-xs bg-[#FAFAFA] border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none focus:border-[#FFB703] font-medium resize-none" />
           </div>
 
           {/* ========================================================================= */}
-          {/* RELACIÓN 1: PRODUCTO - CATEGORÍA (Muchos a Muchos) */}
+          {/* RELACIÓN 1: PRODUCTO - CATEGORÍA (Muchos a Muchos, recursivo) */}
           {/* ========================================================================= */}
           <div className="space-y-2 bg-[#FAFAFA] p-2.5 rounded-xl border border-gray-100/40">
             <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">
@@ -254,7 +266,7 @@ const manejarEnvioFormulario = async (e: React.FormEvent) => {
               >
                 <option value="">Selecciona una categoría...</option>
 
-                {categoriasDisponibles.map(c => (
+                {categorias.map(c => (
                   <option key={c.id} value={c.id}>
                     {c.nombre}
                   </option>
@@ -266,7 +278,7 @@ const manejarEnvioFormulario = async (e: React.FormEvent) => {
                 onClick={agregarCategoriaLista}
                 className="bg-[#1E1E24] text-white text-xs font-bold px-3 rounded-xl hover:bg-[#FFB703] hover:text-[#1E1E24] transition-colors cursor-pointer"
               >
-                +
+                <BsPlus></BsPlus>
               </button>
             </div>
 
@@ -276,17 +288,19 @@ const manejarEnvioFormulario = async (e: React.FormEvent) => {
                   key={c.categoriaId}
                   className="inline-flex items-center text-[10px] font-bold bg-white text-[#1E1E24] border border-gray-100 px-2 py-0.5 rounded-md gap-1 shadow-2xs"
                 >
+                  <input
+                    type="checkbox"
+                    checked={c.principal}
+                    onChange={() => marcarComoPrincipal(c.categoriaId)}
+                    title="Marcar como principal"
+                    className="w-2.5 h-2.5 cursor-pointer accent-[#FFB703]"
+                  />
+
                   {c.nombre}
 
                   <button
                     type="button"
-                    onClick={() =>
-                      setCategoriasSeleccionadas(
-                        categoriasSeleccionadas.filter(
-                          item => item.categoriaId !== c.categoriaId
-                        )
-                      )
-                    }
+                    onClick={() => quitarCategoria(c.categoriaId)}
                     className="text-[#E63946] font-black cursor-pointer"
                   >
                     ×
@@ -302,8 +316,9 @@ const manejarEnvioFormulario = async (e: React.FormEvent) => {
             <label className="relative flex items-center cursor-pointer">
               <input
                 type="checkbox"
-                checked={ingredientesSeleccionados.length === 0}
+                checked={sinIngredientes}
                 onChange={(e) => {
+                  setSinIngredientes(e.target.checked);
                   if (e.target.checked) {
                     setIngredientesSeleccionados([]);
                   }
@@ -318,6 +333,21 @@ const manejarEnvioFormulario = async (e: React.FormEvent) => {
               Producto sin ingredientes (ej: gaseosa, postre envasado)
             </span>
           </div>
+
+          {sinIngredientes ? (
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                Stock disponible
+              </label>
+              <input
+                type="number"
+                required
+                value={formulario.stock_cantidad}
+                onChange={(e) => setFormulario({ ...formulario, stock_cantidad: Number(e.target.value) })}
+                className="w-full px-2.5 py-1.5 text-xs bg-[#FAFAFA] border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none focus:border-[#FFB703] font-medium"
+              />
+            </div>
+          ) : (
           <div className="space-y-2 bg-[#FAFAFA] p-2.5 rounded-xl border border-gray-100/40">
             <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">
               Ingredientes
@@ -356,14 +386,14 @@ const manejarEnvioFormulario = async (e: React.FormEvent) => {
                 onClick={agregarIngredienteLista}
                 className="col-span-1 bg-[#1E1E24] text-white text-xs font-bold rounded-xl hover:bg-[#FFB703] hover:text-[#1E1E24] transition-colors cursor-pointer"
               >
-                +
+                <BsPlus className='w-5 h-5'></BsPlus>
               </button>
             </div>
 
             <div className="flex flex-wrap gap-1.5 pt-1">
               {ingredientesSeleccionados.map(i => (
                 <span
-                  key={i.ingredienteId}
+                  key={i.ingrediente_id}
                   className="inline-flex items-center text-[10px] font-bold bg-white text-[#1E1E24] border border-gray-100 px-2 py-0.5 rounded-md gap-1 shadow-2xs"
                 >
                   {i.nombre} ({i.cantidad})
@@ -373,7 +403,7 @@ const manejarEnvioFormulario = async (e: React.FormEvent) => {
                     onClick={() =>
                       setIngredientesSeleccionados(
                         ingredientesSeleccionados.filter(
-                          item => item.ingredienteId !== i.ingredienteId
+                          item => item.ingrediente_id !== i.ingrediente_id
                         )
                       )
                     }
@@ -385,65 +415,25 @@ const manejarEnvioFormulario = async (e: React.FormEvent) => {
               ))}
             </div>
           </div>
+          )}
           {/* Fila Doble: Stock Cantidad e Imagen */}
           <div className="grid grid-cols-2 gap-4 items-center">
-            <div className="space-y-1">
-              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                Stock Disponible (Unidades)
-              </label>
-              <input
-                type="number"
-                value={stockCantidad}
-                onChange={(e) => setStockCantidad(Number(e.target.value))}
-                className="w-full px-2.5 py-1.5 text-xs bg-[#FAFAFA] border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none font-medium"
-              />
-            </div>
             <div className="space-y-1">
               <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                 Imagen del Plato
               </label>
               <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 rounded-lg bg-[#FAFAFA] border border-dashed border-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-                  {previewUrl ? <img src={previewUrl} alt="Prev" className="w-full h-full object-cover" /> : <span className="text-xs">🍔</span>}
-                </div>
+                {imagenes.map((i: cloudinary, index: number) =>
+                (<div key={index} className="w-8 h-8 rounded-lg bg-[#FAFAFA] border border-dashed border-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                  <img src={i.url} alt="Prev" className="w-full h-full object-cover"/>
+                </div>)
+                )
+                }
                 <label className="bg-white border border-gray-200 hover:border-[#FFB703] text-gray-500 font-bold text-[10px] py-1.5 px-2.5 rounded-xl transition-all cursor-pointer shadow-2xs">
                   <span>Subir</span>
-                  <input type="file" accept="image/webp image/jpeg image/" className="hidden" onChange={manejarImagen} />
+                  <input type="file" accept="image/*" className="hidden" multiple onChange={handleFileChange} />
                 </label>
               </div>
-            </div>
-          </div>
-
-          {/* Fila Doble de Switches: Habilitado y Disponible (Campos booleanos de la clase SQLModel) */}
-          <div className="grid grid-cols-2 gap-2 pt-1">
-            <div className="flex items-center space-x-2 select-none">
-              <label className="relative flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={habilitado}
-                  onChange={(e) => setHabilitado(e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-7 h-4 bg-gray-200 rounded-full peer peer-focus:outline-none peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500"></div>
-              </label>
-              <span className="text-[10px] font-bold text-[#1E1E24] uppercase tracking-wide">
-                Habilitado
-              </span>
-            </div>
-
-            <div className="flex items-center space-x-2 select-none">
-              <label className="relative flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={disponible}
-                  onChange={(e) => setDisponible(e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-7 h-4 bg-gray-200 rounded-full peer peer-focus:outline-none peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500"></div>
-              </label>
-              <span className="text-[10px] font-bold text-[#1E1E24] uppercase tracking-wide">
-                Disponible en Menú
-              </span>
             </div>
           </div>
 

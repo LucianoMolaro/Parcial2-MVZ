@@ -38,6 +38,7 @@ from app.modules.DetallePedido.router import router as detalle_router
 from app.modules.UnidadMedida.router import router as unidad_medida_router
 from app.modules.Pago.router import router as pago_router
 from app.modules.Cloudinary.router import router as cloudinary_router
+from app.modules.websocket.router import router as websocket_router
 # from app.modules.Admin.router import router as admin_router
 
 
@@ -80,22 +81,23 @@ app.include_router(pedido_router)
 app.include_router(detalle_router)
 app.include_router(unidad_medida_router)
 app.include_router(pago_router)
+app.include_router(websocket_router)
 
 
 
-@app.websocket("/ws/{client_id}")
-async def websocket_endpoint(websocket: WebSocket, client_id: str):
-    connection = await ws_manager.connect(websocket, client_id)
-    try:
-        while True:
-            message = await connection.receive_text()
-            event = await ws_manager.process_message(client_id, message)
-            if event and event.event_type == "join_room":
-                room = (event.data or {}).get("room")
-                if room:
-                    await ws_manager.join_room(client_id, room)
-    except WebSocketDisconnect:
-        await ws_manager.disconnect(client_id)
+# @app.websocket("/ws/{client_id}")
+# async def websocket_endpoint(websocket: WebSocket, client_id: str):
+#     connection = await ws_manager.connect(websocket, client_id)
+#     try:
+#         while True:
+#             message = await connection.receive_text()
+#             event = await ws_manager.process_message(client_id, message)
+#             if event and event.event_type == "join_room":
+#                 room = (event.data or {}).get("room")
+#                 if room:
+#                     await ws_manager.join_room(client_id, room)
+#     except WebSocketDisconnect:
+#         await ws_manager.disconnect(client_id)
 
 
 @app.get("/")

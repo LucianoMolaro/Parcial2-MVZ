@@ -5,9 +5,8 @@ from app.core.UnitOfWork import UnitOfWork
 from app.modules.Categoria.model import Categoria
 from app.modules.Categoria.schema import CategoriaCreate, CategoriaSchema
 
-
-def get_all(uow: UnitOfWork) -> List[Categoria]:
-    return uow.categoria.get_all()
+def get_all(uow: UnitOfWork, parent_id: Optional[int] = None) -> List[Categoria]:
+    return uow.categoria.get_by_parent(parent_id)
 
 
 # def get_tree(uow: UnitOfWork) -> list[CategoriaSchema]:

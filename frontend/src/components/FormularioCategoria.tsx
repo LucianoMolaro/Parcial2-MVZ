@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Categoria } from '../models/Categoria';
+import { cloudinary } from '../models/Cloudinary';
 
 interface ModalProps {
   isOpen: boolean;
@@ -15,6 +16,9 @@ export default function FormularioCategoria({ isOpen, onClose, categoriaEditar, 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [seleccionNiveles, setSeleccionNiveles] = useState<number[]>([]);
+  const [imagenes, setImagenes] = useState<cloudinary | undefined>(undefined);
+
+  const [subiendo, setSubiendo] = useState(false);
 
   useEffect(() => {
     fetch('http://localhost:8000/categorias/', { credentials: 'include' })
@@ -37,11 +41,6 @@ useEffect(() => {
 }, [categoriaEditar, parentIdPreset]);
 
   if (!isOpen) return null;
-
-  const manejarCambioImagen = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const archivo = e.target.files?.[0];
-    if (archivo) setPreviewUrl(URL.createObjectURL(archivo));
-  };
 
   const manejarCambioSelect = (nivelIndex: number, valor: string) => {
     setSeleccionNiveles(prev => {
@@ -111,9 +110,52 @@ useEffect(() => {
     return selectoresJSX;
   };
 
+const borrarUnaImagen = async (publicId: string): Promise<void> => {
+  const resp = await fetch(`http://localhost:8000/cloudinary/delete/${publicId}`, {
+    method: "DELETE",
+  });
+  if (!resp.ok) {
+    throw new Error(`Error al borrar imagen: ${resp.status}`);
+  }
+  const data: { ok: boolean; detail: string } = await resp.json();
+  if (!data.ok) throw new Error("El servidor indicó que el borrado falló");
+};
+
+const subirUnaImagen = async (archivo: File): Promise<cloudinary> => {
+      const formData = new FormData();
+      formData.append("file", archivo);
+      formData.append("folder", "prueba");
+  
+      const resp = await fetch("http://localhost:8000/cloudinary/upload", {
+        method: "POST",
+        body: formData,
+      });
+  
+      if (!resp.ok) throw new Error(`Error al subir: ${resp.status}`);
+  
+      const data: { ok: boolean; url: string; public_id: string } = await resp.json();
+      if (!data.ok) throw new Error("El servidor indicó que la subida falló");
+  
+      return { url: data.url, public_id: data.public_id };
+    };
+  
+const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const archivo = e.target.files?.[0];
+  if (!archivo) return;
+  setSubiendo(true);
+
+  if(imagenes) borrarUnaImagen(imagenes.public_id)
+
+  const subida = subirUnaImagen(archivo)
+  setImagenes(await subida);  
+    setSubiendo(false);
+    e.target.value = "";
+  };
+
 const manejarEnvio = async (e: React.FormEvent) => {
   e.preventDefault();
 
+  console.log(imagenes?.url)
   const payload = {
     nombre,
     descripcion: descripcion || null,
@@ -121,13 +163,13 @@ const manejarEnvio = async (e: React.FormEvent) => {
       seleccionNiveles.length > 0
         ? seleccionNiveles[seleccionNiveles.length - 1]
         : null,
-    imagen_url: categoriaEditar?.imagen_url ?? null,
+    imagen_url: imagenes?.url ?? null,
     habilitado: categoriaEditar?.habilitado ?? true,
   };
 
   const url = categoriaEditar
     ? `http://localhost:8000/categorias/${categoriaEditar.id}`
-    : "http://localhost:8000/categorias/";
+    : "http://localhost:8000/categorias/crear";
 
   const method = categoriaEditar ? "PUT" : "POST";
 
@@ -199,11 +241,11 @@ const manejarEnvio = async (e: React.FormEvent) => {
             <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Multimedia</label>
             <div className="flex items-center space-x-2">
               <div className="w-10 h-10 rounded-xl bg-[#FAFAFA] border border-gray-100 border-dashed flex items-center justify-center overflow-hidden">
-                {previewUrl ? <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" /> : <span className="text-sm">🖼️</span>}
+                {true ? <img src={imagenes?.url} alt="Preview" className="w-full h-full object-cover" /> : <span className="text-sm">🖼️</span>}
               </div>
               <label className="bg-white border border-gray-200 hover:border-[#FFB703] text-gray-500 font-bold text-[11px] py-1.5 px-3 rounded-xl transition-all cursor-pointer shadow-xs active:scale-98">
                 <span>Cargar Imagen</span>
-                <input type="file" accept="image/*" className="hidden" onChange={manejarCambioImagen} />
+                <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
               </label>
             </div>
           </div>

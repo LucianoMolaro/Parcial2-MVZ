@@ -69,7 +69,7 @@ export function carritoReducer(
       } else {
         nuevosItems = [
           ...state.items,
-          { producto_id: action.payload.id, cantidad, personalizacion: [number] },
+          { producto_id: action.payload.id, cantidad, personalizacion: [] },
         ];
       }
       break;

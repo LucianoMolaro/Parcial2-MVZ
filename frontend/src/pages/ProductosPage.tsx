@@ -1,42 +1,26 @@
 import { useRef, useState, useEffect } from 'react';
 import BarraNavegacion from '../components/Navbar';
 import { useAuthUser } from '../context/AuthContext';
-import { BsCurrencyDollar, BsCartPlus, BsPencilSquare, BsTrash, BsBackspace, BsInfoSquare, BsSearch, BsChevronRight, BsChevronLeft } from 'react-icons/bs';
+import { BsCurrencyDollar, BsCartPlus, BsBackspace, BsInfoSquare, BsChevronRight, BsChevronLeft } from 'react-icons/bs';
 import { useFiltros } from '../context/FiltrosContext';
-import { ProductoPublic } from '../models/Producto';
+
 import { useCarrito } from '../context/CarritoContext';
-import { useWsEvent } from '../context/WebSocketContext';
-import { WsEvent } from '../models/WebSockets';
+import { Producto } from '../models/Producto';
+import {  CategoriaFiltro } from '../models/Categoria';
 
-interface Categoria {
-  id: string;
-  nombre: string;
-  emoji: string;
-  padreId: string | null;
-}
 
-const CATEGORIAS_MOCK: Categoria[] = [
-  { id: 'burgers',   nombre: 'Burgers',    emoji: '', padreId: null },
-  { id: 'pizzas-1',  nombre: 'Pizzas',     emoji: '🍕', padreId: null },
-  { id: 'pizzas-2',  nombre: 'Snacks',     emoji: '🍟', padreId: null },
-  { id: 'pizzas-3',  nombre: 'Bebidas',    emoji: '🥤', padreId: null },
-  { id: 'pizzas-4',  nombre: 'Postres',    emoji: '🍦', padreId: null },
-  { id: 'pizzas-5',  nombre: 'Combos',     emoji: '📦', padreId: null },
-  { id: 'pizzas-6',  nombre: 'Salsas',     emoji: '🍯', padreId: null },
-  { id: 'pizzas-7',  nombre: 'Cafetería',  emoji: '☕', padreId: null },
-  { id: 'pizzas-8',  nombre: 'Panadería',  emoji: '🥐', padreId: null },
-  { id: 'pizzas-9',  nombre: 'Veggie',     emoji: '🌱', padreId: null },
-  { id: 'pizzas-10', nombre: 'Promos',     emoji: '🎉', padreId: null },
-  { id: 'b-carne',         nombre: 'De Carne', emoji: '🥩', padreId: 'burgers' },
-  { id: 'b-pollo',         nombre: 'De Pollo', emoji: '🍗', padreId: 'burgers' },
-  { id: 'b-carne-simples', nombre: 'Simples',  emoji: '🔸', padreId: 'b-carne' },
-  { id: 'b-carne-dobles',  nombre: 'Dobles',   emoji: '🔺', padreId: 'b-carne' },
-];
+
 
 export default function PaginaCatalogo() {
   const { user } = useAuthUser();
   const { state, dispatch, limpiarFiltros } = useFiltros();
   const { agregar, cantidadDeItem } = useCarrito();
+
+  useEffect(() => {
+  if (window.location.hostname.includes('devtunnels.ms')) {
+    window.location.href = 'http://localhost:5173';
+  }
+}, []);
   
   const {
     nivelActualId,
@@ -50,15 +34,10 @@ export default function PaginaCatalogo() {
   
   const esAdmin = user?.roles?.some(r => r.codigo === 'ADMIN' || r.codigo === 'PEDIDOS') ?? false;
 
-  const [productos, setProductos] = useState<ProductoPublic[]>([]);
-  const [categoriasBackend, setCategoriasBackend] = useState<Categoria[]>([]);
+  const [productos, setProductos] = useState<Producto[]>([]);
+  const [categoriasBackend, setCategoriasBackend] = useState<CategoriaFiltro[]>([]);
   const [sinStock, setSinStock] = useState<Set<number>>(new Set());
 
-  useWsEvent('producto_sin_stock', (evt: WsEvent) => {
-    const d = evt.data as { producto_id: number };
-    setSinStock(prev => new Set([...prev, d.producto_id]));
-    setProductos(prev => prev.map(p => p.id === d.producto_id ? { ...p, stock: 0 } : p));
-  });
 
   useEffect(() => {
     fetch('http://localhost:8000/productos/', { credentials: 'include' })
@@ -81,7 +60,7 @@ export default function PaginaCatalogo() {
       .catch(() => {});
   }, []);
 
-  const categoriasParaCarrusel = categoriasBackend.length > 0 ? categoriasBackend : CATEGORIAS_MOCK;
+  const categoriasParaCarrusel = categoriasBackend;
 
   const productosFiltrados = productos.filter(p =>
     !busqueda || p.nombre.toLowerCase().includes(busqueda.toLowerCase())
@@ -114,7 +93,7 @@ export default function PaginaCatalogo() {
     });
   };
   
-  const handleAgregarAlCarrito = (producto: ProductoPublic) => {
+  const handleAgregarAlCarrito = (producto: Producto) => {
     agregar(producto.id);
   };
 
@@ -255,76 +234,6 @@ export default function PaginaCatalogo() {
           </button>
         </div>
 
-        {/* ── BÚSQUEDA Y ORDENAMIENTO ── */}
-        <div className="w-4/5 mx-auto mb-6 px-1 flex flex-col sm:flex-row gap-3 items-center">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center flex-grow w-full">
-
-            {/* Buscador */}
-            <div className="w-full relative">
-              <span className="absolute inset-y-0 left-3 flex items-center text-gray-400 select-none pointer-events-none">
-                <BsSearch></BsSearch>
-              </span>
-              <input
-                type="text"
-                value={busqueda}
-                onChange={(e) => dispatch({ type: "SET_BUSQUEDA", payload: e.target.value })}
-                placeholder="Busca tu antojo favorito..."
-                className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-gray-100/80 rounded-xl shadow-xs text-[#1E1E24] placeholder-gray-400 focus:outline-none focus:border-[#FFB703] transition-colors font-medium"
-              />
-            </div>
-
-            {/* Selectores */}
-            <div className="grid grid-cols-2 gap-3 w-full">
-
-              {/* Criterio principal */}
-              <select
-                className="w-full px-2 py-2 text-xs bg-white border border-gray-100/80 rounded-xl shadow-xs text-[#1E1E24] focus:outline-none focus:border-[#FFB703] transition-colors font-medium cursor-pointer"
-                value={criterioSeleccionado}
-                onChange={(e) => dispatch({ type: "SET_CRITERIO", payload: e.target.value })}
-              >
-                <option value="" disabled hidden>Filtrar por...</option>
-                <option value="todos">Todos los productos</option>
-                {filtroOpciones.map((filtro) => (
-                  <option key={filtro.nombre} value={filtro.nombre}>
-                    {filtro.nombre}
-                  </option>
-                ))}
-              </select>
-
-              {/* División del criterio */}
-              <select
-                className="w-full px-2 py-2 text-xs bg-white border border-gray-100/80 rounded-xl shadow-xs text-[#1E1E24] focus:outline-none focus:border-[#FFB703] transition-colors font-medium cursor-pointer disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
-                value={divisionSeleccionada}
-                disabled={!criterioSeleccionado || criterioSeleccionado === "todos"}
-                onChange={(e) => dispatch({ type: "SET_DIVISION", payload: e.target.value })}
-              >
-                <option value="" disabled hidden>Seleccionar opción...</option>
-                {filtroOpciones
-                  .find((f) => f.nombre === criterioSeleccionado)
-                  ?.divisiones.map((division) => (
-                    <option key={division} value={division.toLowerCase()}>
-                      {division}
-                    </option>
-                  ))}
-              </select>
-            </div>
-          </div>
-
-          {/* <FormularioProducto isOpen={abierto} onClose={()=>{setAbierto(!abierto)}}/> */}
-
-          {/* Botón limpiar */}
-          <div className="w-full sm:w-auto flex justify-end">
-            <button
-              onClick={limpiarFiltros}
-              title="Limpiar todos los filtros"
-              className="w-full sm:w-9 h-8 flex items-center justify-center text-xs bg-white hover:bg-[#E63946] border border-gray-100/80 text-gray-400 hover:text-white rounded-xl shadow-xs focus:outline-none transition-all font-black cursor-pointer active:scale-95"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
 
         {/* ── GRID DE PRODUCTOS ── */}
         <div className="w-[90%] mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -361,37 +270,6 @@ export default function PaginaCatalogo() {
                 </div>
 
                 <div className="flex items-center justify-between pt-1.5 border-t border-gray-50">
-                  {esAdmin ? (
-                    <>
-                      <div className="flex flex-col">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Precio</span>
-                        <div className="flex items-center">
-                          <BsCurrencyDollar className="w-3.5 h-3.5 text-stone-800" />
-                          <span className="text-[12px] font-black text-stone-700">{producto.precio}</span>
-                        </div>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Stock</span>
-                        <span className="text-[12px] font-black text-gray-800">120</span>
-                      </div>
-                      <div className="flex items-center space-x-1.5">
-                        <button
-                          onClick={() => console.log(`Editar producto ${producto.id}`)}
-                          title="Editar producto"
-                          className="bg-gray-50 border border-gray-100/70 flex items-center justify-center hover:bg-amber-300 text-stone-700 w-7 h-7 hover:text-white p-1.5 rounded-md transition-all duration-300 active:scale-95 focus:outline-none cursor-pointer"
-                        >
-                          <BsPencilSquare className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          onClick={() => console.log(`Eliminar producto ${producto.id}`)}
-                          title="Eliminar producto"
-                          className="bg-gray-50 hover:bg-red-400 border w-7 h-7 border-gray-100/70 text-stone-700 hover:text-white p-1.5 rounded-md transition-all duration-300 active:scale-95 focus:outline-none cursor-pointer"
-                        >
-                          <BsTrash className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </>
-                  ) : (
                     <>
                       <div className="flex flex-col">
                         <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Precio</span>
@@ -404,14 +282,13 @@ export default function PaginaCatalogo() {
                       </div>
                       <button
                         onClick={() => handleAgregarAlCarrito(producto)}
-                        disabled={producto.stock === 0 || sinStock.has(producto.id)}
+                        disabled={producto.stock_cantidad === 0 || sinStock.has(producto.id)}
                         className="bg-amber-300 hover:bg-[#E63946] text-[#1E1E24] hover:text-white font-bold text-[11px] px-2.5 py-1.5 rounded-md flex items-center space-x-1 transition-all duration-300 active:scale-95 focus:outline-none cursor-pointer disabled:bg-gray-400 disabled:text-gray-600 disabled:cursor-not-allowed disabled:hover:bg-gray-400"
                       >
                         <BsCartPlus className="w-3.5 h-3.5" />
                         <span>Agregar</span>
                       </button>
                     </>
-                  )}
                 </div>
               </div>
             </article>

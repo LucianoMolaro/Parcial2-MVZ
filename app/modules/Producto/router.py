@@ -1,16 +1,17 @@
-from typing import Annotated, List, Optional
-from fastapi import APIRouter, Depends, Query, UploadFile, File, HTTPException
+from typing import Optional
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 
 from app.core.deps import get_current_active_user, get_current_user_optional, get_uow, require_role
 from app.core.UnitOfWork import UnitOfWork
 from app.core.Cloudinary import upload_image_to_cloud
-from app.modules.Producto.schema import ProductoCarrito, ProductoCreate, ProductoDisponibilidadUpdate, ProductoSchema
+from app.modules.Producto.schema import ProductoCreate, ProductoDisponibilidadUpdate, ProductoSchema
 from app.modules.Producto import service as producto_service
 from app.modules.Usuario.model import Usuario
 
 router = APIRouter(prefix="/productos", tags=["Productos"])
 
-ROLES_ADMIN = {"ADMIN", "STOCK"}
+ROLES_ADMIN = {"ADMIN", "STOCK"}  # ajustá esto si ya tenés esta constante definida en otro lado
+
 
 @router.get("/", response_model=list[ProductoSchema])
 def listar_productos(
@@ -36,7 +37,7 @@ def obtener_producto(
 
 @router.post("/", response_model=ProductoSchema, status_code=201)
 def crear_producto(
-    datos: ProductoSchema,
+    datos: ProductoCreate,
     uow: UnitOfWork = Depends(get_uow),
     _=Depends(require_role(["ADMIN", "STOCK"])),
 ):
@@ -46,7 +47,7 @@ def crear_producto(
 @router.put("/{producto_id}", response_model=ProductoSchema)
 def editar_producto(
     producto_id: int,
-    datos: ProductoSchema,
+    datos: ProductoCreate,
     uow: UnitOfWork = Depends(get_uow),
     _=Depends(require_role(["ADMIN", "STOCK"])),
 ):

@@ -16,8 +16,7 @@ class Categoria(SQLModel, table=True):
     nombre: str = Field(sa_column=Column(String(100), unique=True, nullable=False))
     descripcion: Optional[str] = Field(default=None, sa_column=Column(Text, nullable=True))
     parent_id: Optional[int] = Field(default=None,sa_column=Column(BigInteger, ForeignKey("categoria.id"), nullable=True))
-    imagen_url: Optional[str] = Field(default=None, sa_column=Column(Text, nullable=True))
-    imagen_public_id: Optional[str] = Field(default=None, sa_column=Column(Text, nullable=True))
+    imagen_url: str = Field(default=None, sa_column=Column(Text, nullable=True))
     habilitado: bool = Field(default=True)
 
 

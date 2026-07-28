@@ -1,4 +1,5 @@
-from typing import Annotated, List, Optional
+from typing import Optional
+
 from fastapi import APIRouter, Depends, Query
 
 from app.core.deps import get_current_active_user, get_uow, require_role
@@ -9,19 +10,14 @@ from app.modules.Categoria import service as categoria_service
 router = APIRouter(prefix="/categorias", tags=["Categorias"])
 
 
-# @router.get("/arbol", response_model=List[CategoriaTree])
-# def arbol_categorias(
-#     uow: UnitOfWork = Depends(get_uow),
-#     _=Depends(get_current_active_user),
-# ):
-#     return categoria_service.get_tree(uow)
-
-
 @router.get("/", response_model=list[CategoriaSchema])
 def listar_categorias(
+    parent_id: Optional[int] = Query(default=None),
     uow: UnitOfWork = Depends(get_uow),
 ):
-    return categoria_service.get_all(uow)
+    # Sin parent_id -> categorías raíz (parent_id IS NULL)
+    # Con parent_id -> subcategorías de esa categoría (drill-down recursivo)
+    return categoria_service.get_all(uow, parent_id=parent_id)
 
 
 @router.get("/{categoria_id}", response_model=CategoriaSchema)
@@ -33,7 +29,7 @@ def obtener_categoria(
     return categoria_service.get_by_id(uow, categoria_id)
 
 
-@router.post("/", response_model=CategoriaSchema, status_code=201)
+@router.post("/crear", response_model=CategoriaSchema, status_code=201)
 def crear_categoria(
     datos: CategoriaCreate,
     uow: UnitOfWork = Depends(get_uow),

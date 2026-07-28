@@ -1,60 +1,29 @@
-from collections import defaultdict
 from decimal import Decimal
 from typing import List, Optional
 
-from fastapi import HTTPException, status
-from app.core.WsManager import ws_manager
+from fastapi import HTTPException
 
 from app.core.MercadoPago import crear_preferencia
 from app.core.UnitOfWork import UnitOfWork
+from app.core.WsManager import ws_manager
+from app.core.Config import settings
 from app.modules.DetallePedido.model import DetallePedido
-from app.modules.DireccionEntrega.model import DireccionEntrega
 from app.modules.HistorialEstadoPedido.model import HistorialEstadoPedido
 from app.modules.Pedido.model import Pedido
-from app.modules.DireccionEntrega.schema import DireccionRead
-from app.modules.Pedido.schema import DetallePedidoRead, PedidoCreate, PedidoCambiarEstado, PedidoRead
-from app.modules.Producto.model import Producto
-from app.modules.Usuario.model import Usuario
-from app.core.Config import settings
-
-def _cargar_detalles(uow: UnitOfWork, pedido: Pedido) -> PedidoRead:
-    dir = pedido.direccion_entrega
-    detalles = [
-        DetallePedidoRead(
-            pedido_id=d.pedido_id,
-            producto_id=d.producto_id,
-            cantidad=d.cantidad,
-            nombre=d.nombre,
-            precio=d.precio,
-            subtotal=d.subtotal,
-            personalizacion_nombres=getattr(d, "personalizacion_nombres", []) or [],
-        )
-        for d in pedido.detalles
-    ]
-    return PedidoRead(
-        id=pedido.id,
-        usuario_id=pedido.usuario_id,
-        forma_pago_codigo=pedido.forma_pago_codigo,
-        direccion=DireccionRead(alias=dir.alias, calle1=dir.calle1, altura=dir.altura, ciudad=dir.ciudad),
-        estado_codigo=pedido.estado_codigo,
-        subtotal=pedido.subtotal,
-        costo_envio=pedido.costo_envio,
-        total=pedido.total,
-        notas=pedido.notas,
-        created_at=pedido.created_at.isoformat() if pedido.created_at else None,
-        detalles=detalles,
-    )
+from app.modules.Pedido.schema import FormaPago, PedidoCambiarEstado, PedidoCreate
 
 
-def get_all(uow: UnitOfWork, usuario_id_filter: Optional[int], offset: int, limit: int) -> List[PedidoRead]:
-    return [_cargar_detalles(uow, p) for p in uow.pedidos.get_all_filtrado(usuario_id_filter, offset, limit)]
+def get_all(uow: UnitOfWork, usuario_id_filter: Optional[int], offset: int, limit: int) -> List[Pedido]:
+    return uow.pedidos.get_all_filtrado(usuario_id_filter, offset, limit)
 
 
-def get_by_id(uow: UnitOfWork, pedido_id: int) -> PedidoRead:
+def get_by_id(uow: UnitOfWork, pedido_id: int) -> Pedido:
     pedido = uow.pedidos.get_by_id(pedido_id)
     if not pedido:
         raise HTTPException(status_code=404, detail="Pedido no encontrado")
-    return _cargar_detalles(uow, pedido)
+    return pedido
+
+
 
 
 TRANSICIONES: dict[str, list[str]] = {
@@ -67,136 +36,114 @@ TRANSICIONES: dict[str, list[str]] = {
 CANCELACION_CLIENT = {"PENDIENTE", "CONFIRMADO"}
 
 
-async def crear_pedido():
-    # direccion = uow.direcciones.get_by_id(data.direccion)
+async def crear_pedido(uow: UnitOfWork, data: PedidoCreate, usuario_id: int) -> tuple[Pedido, Optional[str]]:
+    direccion_id: Optional[int] = None
 
-    # if direccion is None or direccion.usuario_id != usuario.id:
-    #     raise HTTPException(
-    #         status_code=status.HTTP_404_NOT_FOUND,
-    #         detail="Dirección inválida."
-    #     )
+    if data.direccion is not None:
+        direccion = uow.direcciones.get_by_id(data.direccion)
+        if direccion is None or direccion.usuario_id != usuario_id:
+            raise HTTPException(status_code=404, detail="Dirección inválida.")
+        direccion_id = direccion.id
+    elif data.forma_pago != FormaPago.EFECTIVO:
+        # Sin dirección = retiro en el local, y el retiro solo admite efectivo.
+        raise HTTPException(status_code=400, detail="El retiro en el local solo admite pago en efectivo.")
 
-    # forma_pago = uow.formas_pago.get_by_id(data.forma_pago)
+    producto_ids = [p.id for p in data.productos]
+    productos = {p.id: p for p in uow.productos.get_by_ids(producto_ids)}
 
-    # if forma_pago is None:
-    #     raise HTTPException(
-    #         status_code=status.HTTP_400_BAD_REQUEST,
-    #         detail="Forma de pago inválida."
-    #     )
+    with uow:
+        pedido = Pedido(
+            usuario_id=usuario_id,
+            direccion_entrega_id=direccion_id,
+            forma_pago_codigo=data.forma_pago.value,
+            estado_codigo="PENDIENTE",
+            subtotal=Decimal("0"),
+            descuento=Decimal("0"),
+            costo_envio=Decimal("0"),
+            total=Decimal("0"),
+        )
+        uow.pedidos.add(pedido)
 
-    # producto_ids = [p.id for p in data.productos]
+        subtotal = Decimal("0")
 
-    # productos = uow.productos.get_by_ids(producto_ids)
+        for item in data.productos:
+            producto = productos.get(item.id)
+            if producto is None:
+                raise HTTPException(status_code=404, detail=f"Producto {item.id} inexistente.")
+            if not producto.habilitado:
+                raise HTTPException(status_code=400, detail=f"{producto.nombre} no está disponible.")
+            if producto.stock_cantidad < item.cantidad:
+                raise HTTPException(status_code=400, detail=f"No hay stock suficiente de {producto.nombre}.")
 
-    # productos = {
-    #     p.id: p
-    #     for p in productos
-    # }
-
-    # pedido = Pedido(
-    #     usuario_id=usuario.id,
-    #     direccion_entrega_id=direccion.id,
-    #     forma_pago_codigo=forma_pago.codigo,
-    #     estado_codigo="PENDIENTE",
-    #     subtotal=Decimal("0"),
-    #     descuento=Decimal("0"),
-    #     costo_envio=Decimal("50"),
-    #     total=Decimal("0"),
-    # )
-
-    # uow.pedidos.add(pedido)
-
-    # subtotal = Decimal("0")
-
-    # for item in data.productos:
-
-    #     producto = productos.get(item.id)
-
-    #     if producto is None:
-    #         raise HTTPException(
-    #             status_code=404,
-    #             detail=f"Producto {item.id} inexistente."
-    #         )
-
-    #     if not producto.habilitado:
-    #         raise HTTPException(
-    #             status_code=400,
-    #             detail=f"{producto.nombre} no está disponible."
-    #         )
-
-    #     if producto.stock_cantidad < item.cantidad:
-    #         raise HTTPException(
-    #             status_code=400,
-    #             detail=f"No hay stock suficiente de {producto.nombre}."
-    #         )
-
-    #     personalizacion_ids = []
-    #     personalizacion_nombres = []
-
-    #     for relacion in producto.producto_ingrediente:
-
-    #         if (
-    #             relacion.es_removible
-    #             and relacion.ingrediente_id in item.personalizacion
-    #         ):
-    #             continue
-
-    #         personalizacion_ids.append(relacion.ingrediente.id)
-    #         personalizacion_nombres.append(relacion.ingrediente.nombre)
-
-    #     detalle = DetallePedido(
-    #         pedido_id=pedido.id,
-    #         producto_id=producto.id,
-    #         cantidad=item.cantidad,
-    #         nombre=producto.nombre,
-    #         precio=Decimal(str(producto.precio)),
-    #         subtotal=Decimal(str(producto.precio))
-    #         * item.cantidad,
-    #         personalizacion=personalizacion_ids,
-    #         personalizacion_nombres=personalizacion_nombres,
-    #     )
-
-    #     pedido.detalles.append(detalle)
-
-    #     producto.stock_cantidad -= item.cantidad
-
-    #     subtotal += detalle.subtotal
-
-    # pedido.subtotal = subtotal
-    # pedido.total = (
-    #     subtotal
-    #     + pedido.costo_envio
-    #     - pedido.descuento
-    # )
-
-    await ws_manager.broadcast("http://localhost:5173/login", "cambiarURL")
-    # connection.("http://localhost:5173/login", "cambiarURL")
-
-    preference_data = {
-        "items": [
-            {
-                "title": "Pedido #123",
-                "quantity": 1,
-                "unit_price": 1000.00
+            # Solo se puede "sacar" un ingrediente si es removible y pertenece al producto
+            removibles_validos = {
+                rel.ingrediente_id for rel in producto.producto_ingrediente if rel.es_removible
             }
-        ],
-        "back_urls": {
-        "success": "https://xvcrkf3s-5173.brs.devtunnels.ms/",
-        "failure": "https://xvcrkf3s-5173.brs.devtunnels.ms/",
-        "pending": "https://xvcrkf3s-5173.brs.devtunnels.ms/",
+            personalizacion_ids = [i for i in item.personalizacion if i in removibles_validos]
+            personalizacion_nombres = [
+                rel.ingrediente.nombre
+                for rel in producto.producto_ingrediente
+                if rel.ingrediente_id in personalizacion_ids
+            ]
+
+            detalle = DetallePedido(
+                pedido_id=pedido.id,
+                producto_id=producto.id,
+                cantidad=item.cantidad,
+                nombre=producto.nombre,
+                precio=Decimal(str(producto.precio)),
+                subtotal=Decimal(str(producto.precio)) * item.cantidad,
+                personalizacion=personalizacion_ids,
+                personalizacion_nombres=personalizacion_nombres,
+            )
+            pedido.detalles.append(detalle)
+
+            producto.stock_cantidad -= item.cantidad
+
+            # Descuenta stock de cada ingrediente usado, salvo el que se sacó
+            for rel in producto.producto_ingrediente:
+                if rel.ingrediente_id in personalizacion_ids:
+                    continue
+                rel.ingrediente.stock_cantidad -= float(rel.cantidad) * item.cantidad
+
+            subtotal += detalle.subtotal
+
+        descuento = Decimal("2.50") if subtotal > 15 else Decimal("0")
+        costo_envio = Decimal("1.99") if (direccion_id is not None and subtotal > 0) else Decimal("0")
+
+        pedido.subtotal = subtotal
+        pedido.descuento = descuento
+        pedido.costo_envio = costo_envio
+        pedido.total = subtotal - descuento + costo_envio
+
+    await ws_manager.broadcast(
+        {
+            "pedido_id": pedido.id,
+            "usuario_id": pedido.usuario_id,
+            "estado_codigo": pedido.estado_codigo,
+            "total": float(pedido.total),
         },
-        "auto_return": "approved",
-        "external_reference": "123",
-        "notification_url": f"{settings.MP_URL}/pagos/crear"
-    }
+        "pedido_nuevo",
+    )
 
-    return crear_preferencia(preference_data)
+    init_point = None
+    if data.forma_pago == FormaPago.MERCADO_PAGO:
+        preference_data = {
+            "items": [{"title": f"Pedido #{pedido.id}", "quantity": 1, "unit_price": float(pedido.total)}],
+            "back_urls": {
+                # TODO: reemplazar por la URL real del front en cada ambiente
+                "success": "https://xvcrkf3s-5173.brs.devtunnels.ms/",
+                "failure": "https://xvcrkf3s-5173.brs.devtunnels.ms/",
+                "pending": "https://xvcrkf3s-5173.brs.devtunnels.ms/",
+            },
+            "auto_return": "approved",
+            "external_reference": str(pedido.id),
+            "notification_url": f"{settings.MP_URL}/pagos/crear",
+        }
+        resultado = crear_preferencia(preference_data)
+        init_point = resultado.get("init_point")
 
-
-
-
-
-        
+    return pedido, init_point
 
 
 def cambiar_estado(
@@ -241,6 +188,8 @@ def cambiar_estado(
                 if producto:
                     producto.stock_cantidad += detalle.cantidad
                 for link in uow.producto_ingredientes.get_by_producto(detalle.producto_id):
+                    if link.ingrediente_id in detalle.personalizacion:
+                        continue  # ese ingrediente no se había descontado, no se restaura
                     ingrediente = uow.ingredientes.get_by_id(link.ingrediente_id)
                     if ingrediente:
                         ingrediente.stock_cantidad += float(link.cantidad) * detalle.cantidad
@@ -252,4 +201,4 @@ def cambiar_estado(
             usuario_id=actor_id,
         ))
 
-        return _cargar_detalles(uow, pedido)
+        return pedido

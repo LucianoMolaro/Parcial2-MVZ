@@ -3,8 +3,8 @@ import BarraNavegacion from '../components/Navbar';
 import { BsPencilSquare, BsSearch, BsTrash } from 'react-icons/bs';
 import FormularioProducto from '../components/FormularioProducto';
 import { Producto } from '../models/Producto';
-import { useWsEvent } from '../context/WebSocketContext';
-import { WsEvent } from '../models/WebSockets';
+import { Categoria } from '../models/Categoria';
+
 
 export default function PaginaProductosAdmin() {
   const [productos, setProductos] = useState<Producto[]>([]);
@@ -13,6 +13,7 @@ export default function PaginaProductosAdmin() {
   const [busqueda, setBusqueda] = useState('');
   const [filtroDisponible, setFiltroDisponible] = useState('');
   const [filtroStock, setFiltroStock] = useState('');
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
 
   const cargarProductos = async () => {
     const res = await fetch('http://localhost:8000/productos/', { credentials: 'include' });
@@ -21,10 +22,6 @@ export default function PaginaProductosAdmin() {
 
   useEffect(() => { cargarProductos(); }, []);
 
-  useWsEvent('producto_sin_stock', (evt: WsEvent) => {
-    const d = evt.data as { producto_id: number };
-    setProductos(prev => prev.map(p => p.id === d.producto_id ? { ...p, stock_cantidad: 0 } : p));
-  });
 
   const cerrarFormulario = () => {
     setMostrarFormulario(false);
@@ -37,6 +34,8 @@ export default function PaginaProductosAdmin() {
     const res = await fetch(`http://localhost:8000/productos/${prod.id}`, { method: 'DELETE', credentials: 'include' });
     if (res.ok) cargarProductos();
   };
+
+
 
   const productosFiltrados = productos.filter(p => {
     if (busqueda && !p.nombre.toLowerCase().includes(busqueda.toLowerCase())) return false;
@@ -70,7 +69,7 @@ export default function PaginaProductosAdmin() {
             <FormularioProducto isOpen={mostrarFormulario} onClose={cerrarFormulario} productoEditar={productoEditar} />
           )}
 
-          {/* FILTROS */}
+          {/* FILTROS
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="relative">
               <span className="absolute inset-y-0 left-3 flex items-center text-gray-400 pointer-events-none"><BsSearch /></span>
@@ -100,7 +99,7 @@ export default function PaginaProductosAdmin() {
               <option value="con">Con stock</option>
               <option value="sin">Sin stock</option>
             </select>
-          </div>
+          </div> */}
 
           {/* LISTA */}
           <div className="space-y-2.5">

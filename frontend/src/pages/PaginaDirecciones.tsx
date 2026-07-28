@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import BarraNavegacion from '../components/Navbar';
+import { BsPlus } from 'react-icons/bs';
 
 interface Direccion {
   id: number;
@@ -89,8 +90,9 @@ export default function PaginaDirecciones() {
               Mis <span className="text-[#E63946]">Direcciones</span>
             </h1>
           </div>
-          <button onClick={abrirCrear} className="bg-[#1E1E24] hover:bg-[#E63946] text-white text-xs font-bold px-3 py-2 rounded-lg transition-colors cursor-pointer">
-            + Nueva
+          <button onClick={abrirCrear} className="bg-[#1E1E24] flex items-center hover:bg-[#E63946] text-white text-xs font-bold px-3 py-2 rounded-lg transition-colors cursor-pointer">
+            <BsPlus className='w-5 h-5'></BsPlus>
+            <span>Agregar</span>
           </button>
         </div>
 

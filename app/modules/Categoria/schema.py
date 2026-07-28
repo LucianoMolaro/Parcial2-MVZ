@@ -6,6 +6,7 @@ class CategoriaCreate(SQLModel):
     nombre: str
     descripcion: str | None = None
     parent_id: int | None = None
+    imagen_url: str | None = None
     habilitado: bool = True
 
 class CategoriaSchema(CategoriaCreate):

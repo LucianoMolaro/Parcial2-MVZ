@@ -34,17 +34,17 @@ export const menuitems: menuItems[] = [
         },
         {
             label: "Pedidos",
-            path: "/pedidos",
-            roles: ["CLIENTE", "ADMIN"]
+            path: "/usuarios/pedidos",
+            roles: ["CLIENTE", "GUEST"]
         },
         {
             label: "Direcciones",
-            path: "/direcciones",
+            path: "/usuarios/direcciones",
             roles: ["CLIENTE"]
         },
         {
             label: "Carrito",
-            path: "/carrito",
+            path: "/usuarios/carrito",
             roles: ["CLIENTE"]
         },
         {

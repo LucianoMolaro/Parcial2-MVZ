@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react';
 import BarraNavegacion from '../components/Navbar';
 import { useCarrito } from '../context/CarritoContext';
 import { Producto } from '../models/Producto';
-// import { useWsEvent } from '../context/WebSocketContext';
-// import { WsEvent } from '../models/WebSockets';
 
 interface Direccion { id: number; alias: string; calle1: string; altura: string; ciudad: string; }
 
@@ -31,18 +29,17 @@ export default function PaginaCarrito() {
       .catch(() => {});
   }, []);
 
-  // useWsEvent('producto_sin_stock', (evt: WsEvent) => {
-  //   const d = evt.data as { producto_id: number };
-  //   setSinStock(prev => new Set([...prev, d.producto_id]));
-  // });
+  useEffect(() => {
+    if (direccionId === 'retiro') setFormaPago('EFECTIVO');
+  }, [direccionId]);
 
   const itemsCarrito = state.items
     .map((item) => ({
       ...item,
-      producto: productosDetalle.find((p) => p.id === item.id),
+      producto: productosDetalle.find((p) => p.id === item.producto_id),
     }))
     .filter((item) => item.producto !== undefined) as Array<{
-      id: number;
+      producto_id: number;
       cantidad: number;
       personalizacion: number[];
       producto: Producto;
@@ -61,8 +58,8 @@ export default function PaginaCarrito() {
     if (!direccionId || !formaPago || itemsCarrito.length === 0) return;
     setCargando(true);
     const body = {
-      productos: itemsCarrito.map(i => ({ id: i.id, cantidad: i.cantidad, personalizacion: i.personalizacion })),
-      direccion: Number(direccionId),
+      productos: itemsCarrito.map(i => ({ id: i.producto_id, cantidad: i.cantidad, personalizacion: i.personalizacion })),
+      direccion: direccionId === 'retiro' ? null : Number(direccionId),
       forma_pago: formaPago,
     };
     const res = await fetch('http://localhost:8000/pedidos/crear', {
@@ -82,7 +79,7 @@ export default function PaginaCarrito() {
     }
   };
 
-  const botonDeshabilitado = itemsCarrito.length === 0 || itemsCarrito.some(item => sinStock.has(item.id)) || !direccionId || !formaPago || cargando;
+  const botonDeshabilitado = itemsCarrito.length === 0 || itemsCarrito.some(item => sinStock.has(item.producto_id)) || !direccionId || !formaPago || cargando;
 
   return (
     <>
@@ -105,7 +102,7 @@ export default function PaginaCarrito() {
               itemsCarrito.map((item) => {
                 return (
                   <article
-                    key={item.id}
+                    key={item.producto_id}
                     className="bg-white rounded-xl p-3 border border-gray-100/60 shadow-xs flex items-center justify-between gap-4"
                   >
                     {/* Imagen y Detalles del Producto */}
@@ -137,7 +134,7 @@ export default function PaginaCarrito() {
                       {/* Control de cantidad */}
                       <div className="flex items-center bg-gray-50 rounded-md border border-gray-100 overflow-hidden h-7">
                         <button
-                          onClick={() => decrementar(item.id)}
+                          onClick={() => decrementar(item.producto_id)}
                           className="px-2 text-xs font-bold text-gray-500 hover:bg-gray-200 transition-colors cursor-pointer h-full"
                         >
                           -
@@ -146,8 +143,8 @@ export default function PaginaCarrito() {
                           {item.cantidad}
                         </span>
                         <button
-                          onClick={() => incrementar(item.id)}
-                          disabled={sinStock.has(item.id)}
+                          onClick={() => incrementar(item.producto_id)}
+                          disabled={sinStock.has(item.producto_id)}
                           className="px-2 text-xs font-bold text-gray-500 hover:bg-gray-200 transition-colors cursor-pointer h-full disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           +
@@ -156,7 +153,7 @@ export default function PaginaCarrito() {
 
                       {/* Eliminar */}
                       <button
-                        onClick={() => eliminar(item.id)}
+                        onClick={() => eliminar(item.producto_id)}
                         title="Eliminar del carrito"
                         className="p-1.5 text-gray-400 hover:text-[#E63946] hover:bg-red-50 rounded-md transition-colors border border-transparent hover:border-red-100 cursor-pointer"
                       >
@@ -224,6 +221,7 @@ export default function PaginaCarrito() {
                     className="w-full px-2.5 py-2 text-xs bg-[#FAFAFA] border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none focus:border-[#FFB703] transition-colors font-medium cursor-pointer"
                   >
                     <option value="" disabled hidden>Selecciona dónde entregamos...</option>
+                    <option value="retiro">Retirar en el local</option>
                     {direcciones.map(d => (
                       <option key={d.id} value={d.id}>
                         {d.alias} — {d.calle1} {d.altura}, {d.ciudad}
@@ -242,12 +240,18 @@ export default function PaginaCarrito() {
                   <select
                     value={formaPago}
                     onChange={e => setFormaPago(e.target.value)}
-                    className="w-full px-2.5 py-2 text-xs bg-[#FAFAFA] border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none focus:border-[#FFB703] transition-colors font-medium cursor-pointer"
+                    disabled={direccionId === 'retiro'}
+                    className="w-full px-2.5 py-2 text-xs bg-[#FAFAFA] border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none focus:border-[#FFB703] transition-colors font-medium cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <option value="" disabled hidden>Selecciona cómo pagar...</option>
                     <option value="EFECTIVO">Efectivo</option>
-                    <option value="MERCADOPAGO">Mercado Pago</option>
+                    <option value="MERCADOPAGO" disabled={direccionId === 'retiro'}>Mercado Pago</option>
                   </select>
+                  {direccionId === 'retiro' && (
+                    <p className="text-[9px] text-gray-400 font-medium pt-1">
+                      El retiro en el local solo admite pago en efectivo.
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -257,7 +261,7 @@ export default function PaginaCarrito() {
                 <span className="text-xl font-black text-[#1E1E24]">${total.toFixed(2)}</span>
               </div>
 
-              {itemsCarrito.some(item => sinStock.has(item.id)) && (
+              {itemsCarrito.some(item => sinStock.has(item.producto_id)) && (
                 <p className="text-[10px] text-red-500 font-bold text-center">
                   ⚠️ Algunos productos se agotaron
                 </p>

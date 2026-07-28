@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import BarraNavegacion from '../components/Navbar';
 import { useParams } from 'react-router-dom';
-import { useWsEvent } from '../context/WebSocketContext';
-import { WsEvent } from '../models/WebSockets';
 import { useAuthUser } from '../context/AuthContext';
 
 const ESTADO_LABEL: Record<string, string> = {
@@ -48,13 +46,6 @@ export default function PaginaDetallePedido() {
         .then(r => r.json())
         .then(setPedido);
     }, [id]);
-
-    useWsEvent('pedido_estado_actualizado', (evt: WsEvent) => {
-      const d = evt.data as { pedido_id: number; estado_codigo: string };
-      if (pedido && d.pedido_id === pedido.id) {
-        setPedido(prev => prev ? { ...prev, estado_codigo: d.estado_codigo } : prev);
-      }
-    });
 
     if (!pedido) return <><BarraNavegacion /><div className="p-8 text-center text-sm text-gray-400">Cargando...</div></>;
 

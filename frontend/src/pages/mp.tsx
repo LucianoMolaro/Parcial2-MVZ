@@ -6,9 +6,12 @@ export default function PaginaPago() {
   const [cargando, setCargando] = useState(false);
   const { lastEvent } = useWebSocket()
 
-  useEffect(()=>{
-    console.log("Evento recibido:", lastEvent)
-  }, [lastEvent])
+  // useEffect(()=>{
+  //   if (!lastEvent) return;
+  //     setListaPedidos(... Prev, lastEvent.data)
+  // }, [lastEvent])
+
+
 
   useEffect(() => {
     if (window.location.origin.includes("devtunnels.ms")) {

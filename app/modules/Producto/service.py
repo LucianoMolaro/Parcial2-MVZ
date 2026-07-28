@@ -1,88 +1,71 @@
-from typing import List, Optional
+from typing import List
 
 from fastapi import HTTPException
 
 from app.core.UnitOfWork import UnitOfWork
-from app.modules.Categoria.schema import CategoriaSchema
 from app.modules.Producto.model import Producto
-from app.modules.Producto.schema import (
-    ProductoCarrito,
-    ProductoCreate,
-    ProductoDisponibilidadUpdate,
-    ProductoIngredienteRead,
-    ProductoSchema,
-)
+from app.modules.Producto.schema import ProductoCreate, ProductoDisponibilidadUpdate
 from app.modules.ProductoCategoria.model import ProductoCategoria
 from app.modules.ProductoIngrediente.model import ProductoIngrediente
 
 
-def _cargar(uow: UnitOfWork, producto: Producto) -> ProductoSchema:
-    categorias = []
-    for link in uow.producto_categorias.get_by_producto(producto.id):
-        cat = uow.categoria.get_by_id(link.categoria_id)
-        if cat:
-            categorias.append(CategoriaSchema.model_validate(cat))
-
-    ingredientes = []
-    for link in uow.producto_ingredientes.get_by_producto(producto.id):
-        ing = uow.ingredientes.get_by_id(link.ingrediente_id)
-        if ing:
-            ingredientes.append(ProductoIngredienteRead(
-                ingrediente_id=ing.id,
-                nombre=ing.nombre,
-                unidad_medida_id=ing.unidad_medida_id,
-                es_alergeno=ing.es_alergeno,
-                stock_cantidad=ing.stock_cantidad,
-                cantidad=float(link.cantidad),
-            ))
-
-    return ProductoSchema(
-        id=producto.id,
-        nombre=producto.nombre,
-        precio=producto.precio,
-        descripcion=producto.descripcion,
-        disponible=producto.disponible,
-        stock_cantidad=producto.stock_cantidad,
-        habilitado=producto.habilitado,
-        imagenes_url=producto.imagenes_url,   # 👈 nombre correcto, lista completa
-        categorias=categorias,
-        ingredientes=ingredientes,
-    )
-
-
-def get_productos(uow: UnitOfWork, es_admin: bool, page: int) -> List[ProductoSchema]:
+def get_productos(uow: UnitOfWork, es_admin: bool, page: int) -> List[Producto]:
     offset = (page - 1) * 5
-    return [_cargar(uow, p) for p in uow.productos.get_productos_filtrado(es_admin, offset, 5)]
+    return uow.productos.get_productos_filtrado(es_admin, offset, 5)
 
 
-def get_by_id(uow: UnitOfWork, producto_id: int) -> ProductoSchema:
+def get_by_id(uow: UnitOfWork, producto_id: int) -> Producto:
     producto = uow.productos.get_habilitado(producto_id)
     if not producto:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
-    return _cargar(uow, producto)
+    return producto
 
 
-def create(uow: UnitOfWork, data: ProductoCreate) -> ProductoSchema:
+def _calcular_stock(uow: UnitOfWork, data: ProductoCreate) -> int:
+    # Producto final (sin ingredientes): el stock es el que carga el usuario a mano.
+    if not data.ingredientes:
+        return data.stock_cantidad
+
+    # Producto con ingredientes: el stock depende de lo que alcance a cubrir
+    # el ingrediente más escaso (ej: si la pizza usa 200g de queso y hay
+    # 150g, solo alcanza para 0 pizzas).
+    disponibles = []
+    for item in data.ingredientes:
+        ingrediente = uow.ingredientes.get_by_id(item.ingrediente_id)
+        disponibles.append(int(ingrediente.stock_cantidad // item.cantidad))
+    return min(disponibles)
+
+
+def create(uow: UnitOfWork, data: ProductoCreate) -> Producto:
     with uow:
         producto = Producto(
-            nombre=data.nombre, precio=data.precio, descripcion=data.descripcion,
-            disponible=data.disponible, stock_cantidad=data.stock_cantidad,
+            nombre=data.nombre,
+            precio=data.precio,
+            descripcion=data.descripcion,
+            disponible=data.disponible,
+            stock_cantidad=_calcular_stock(uow, data),
         )
         uow.productos.add(producto)
 
-        for cat_id in data.categoria_ids:
-            uow.producto_categorias.add(ProductoCategoria(producto_id=producto.id, categoria_id=cat_id))
+        for cat in data.categorias:
+            uow.producto_categorias.add(ProductoCategoria(
+                producto_id=producto.id,
+                categoria_id=cat.categoria_id,
+                es_principal=cat.principal,
+            ))
 
         for item in data.ingredientes:
             uow.producto_ingredientes.add(ProductoIngrediente(
                 producto_id=producto.id,
                 ingrediente_id=item.ingrediente_id,
                 cantidad=item.cantidad,
+                es_removible=item.es_removible,
             ))
-        return _cargar(uow, producto)
+
+        return producto
 
 
-def update(uow: UnitOfWork, producto_id: int, data: ProductoCreate) -> ProductoSchema:
+def update(uow: UnitOfWork, producto_id: int, data: ProductoCreate) -> Producto:
     with uow:
         producto = uow.productos.get_habilitado(producto_id)
         if not producto:
@@ -92,51 +75,57 @@ def update(uow: UnitOfWork, producto_id: int, data: ProductoCreate) -> ProductoS
         producto.precio = data.precio
         producto.descripcion = data.descripcion
         producto.disponible = data.disponible
-        producto.stock_cantidad = data.stock_cantidad
+        producto.stock_cantidad = _calcular_stock(uow, data)
 
         for link in uow.producto_categorias.get_by_producto(producto_id):
             uow.producto_categorias.delete(link)
         for link in uow.producto_ingredientes.get_by_producto(producto_id):
             uow.producto_ingredientes.delete(link)
 
-        for cat_id in data.categoria_ids:
-            uow.producto_categorias.add(ProductoCategoria(producto_id=producto.id, categoria_id=cat_id))
+        for cat in data.categorias:
+            uow.producto_categorias.add(ProductoCategoria(
+                producto_id=producto.id,
+                categoria_id=cat.categoria_id,
+                es_principal=cat.principal,
+            ))
         for item in data.ingredientes:
             uow.producto_ingredientes.add(ProductoIngrediente(
                 producto_id=producto.id,
                 ingrediente_id=item.ingrediente_id,
                 cantidad=item.cantidad,
+                es_removible=item.es_removible,
             ))
-        return _cargar(uow, producto)
+
+        return producto
 
 
-def update_disponibilidad(uow: UnitOfWork, producto_id: int, data: ProductoDisponibilidadUpdate) -> ProductoSchema:
+def update_disponibilidad(uow: UnitOfWork, producto_id: int, data: ProductoDisponibilidadUpdate) -> Producto:
     with uow:
         producto = uow.productos.get_habilitado(producto_id)
         if not producto:
             raise HTTPException(status_code=404, detail="Producto no encontrado")
         producto.stock_cantidad = data.stock_cantidad
         producto.disponible = data.disponible
-        return _cargar(uow, producto)
+        return producto
 
 
-def reactivar(uow: UnitOfWork, producto_id: int) -> ProductoSchema:
+def reactivar(uow: UnitOfWork, producto_id: int) -> Producto:
     with uow:
         producto = uow.productos.get_by_id(producto_id)
         if not producto:
             raise HTTPException(status_code=404, detail="Producto no encontrado")
         producto.habilitado = True
-        return _cargar(uow, producto)
+        return producto
 
 
-def update_imagen(uow: UnitOfWork, producto_id: int, imagen_url: str) -> ProductoSchema:
+def update_imagen(uow: UnitOfWork, producto_id: int, imagen_url: str) -> Producto:
     with uow:
         producto = uow.productos.get_habilitado(producto_id)
         if not producto:
             raise HTTPException(status_code=404, detail="Producto no encontrado")
         if imagen_url not in producto.imagenes_url:
             producto.imagenes_url = producto.imagenes_url + [imagen_url]
-        return _cargar(uow, producto)
+        return producto
 
 
 def delete(uow: UnitOfWork, producto_id: int) -> None:

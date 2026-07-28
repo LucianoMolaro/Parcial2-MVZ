@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from typing import List, Optional
@@ -29,7 +30,7 @@ class DetallePedidoUpdate(SQLModel):
 
 class PedidoCreate(SQLModel):
     productos: list[ProductoCarrito]
-    direccion: int
+    direccion: Optional[int] = None  # None = retiro en el local
     forma_pago: FormaPago
 
 
@@ -42,12 +43,12 @@ class PedidoRead(SQLModel):
     id: int
     usuario_id: int
     forma_pago_codigo: str
-    direccion: DireccionRead
+    direccion: Optional[DireccionRead] = None
     estado_codigo: str
     subtotal: Decimal
     costo_envio: Decimal
     total: Decimal
     notas: Optional[str] = None
-    created_at: Optional[str] = None
+    created_at: Optional[datetime] = None
     detalles: list[DetallePedidoRead]
     init_point: Optional[str] = None

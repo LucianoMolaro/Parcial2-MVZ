@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { IngredienteSchema } from '../models/Ingrediente';
+import { Ingrediente } from '../models/Ingrediente';
 import { UnidadMedidaSchema } from '../models/UnidadMedida';
 
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
-  ingrediente?: IngredienteSchema;
+  ingrediente?: Ingrediente;
 }
 
 export default function ModalNuevoIngrediente({ isOpen, onClose, ingrediente }: ModalProps) {
@@ -157,7 +157,7 @@ export default function ModalNuevoIngrediente({ isOpen, onClose, ingrediente }: 
             <input
               id="stock"
               type="number"
-              step="0.01"
+              step="0.1"
               required
               value={stockCantidad}
               onChange={(e) => setStockCantidad(e.target.value === '' ? '' : Number(e.target.value))}

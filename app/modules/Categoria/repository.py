@@ -29,3 +29,7 @@ class CategoriaRepository(Repository[Categoria]):
     def get_habilitada(self, id: int) -> Optional[Categoria]:
         c = self.get_by_id(id)
         return c if c and c.habilitado else None
+
+    def get_by_parent(self, parent_id: Optional[int] = None) -> List[Categoria]:
+        stmt = select(Categoria).where(Categoria.parent_id == parent_id)
+        return self._session.exec(stmt).all()

@@ -19,7 +19,7 @@ class Pedido(SQLModel, table=True):
 
     usuario_id: int = Field(foreign_key="usuario.id")
     forma_pago_codigo: str = Field(foreign_key="formapago.codigo", max_length=20)
-    direccion_entrega_id: int = Field(foreign_key="direccionentrega.id")
+    direccion_entrega_id: Optional[int] = Field(default=None, foreign_key="direccionentrega.id")
     estado_codigo: str = Field(default="PENDIENTE", foreign_key="estadopedido.codigo", max_length=20)
 
     subtotal: Decimal = Field(max_digits=10, decimal_places=2)
@@ -53,4 +53,10 @@ class Pedido(SQLModel, table=True):
             "lazy": "selectin"
         }
     )
-    
+
+    # PedidoRead pide el campo "direccion", pero la relación se llama
+    # "direccion_entrega". Con esto alcanza para serializar directo,
+    # sin necesitar un _cargar_detalles armando el objeto a mano.
+    @property
+    def direccion(self) -> Optional["DireccionEntrega"]:
+        return self.direccion_entrega

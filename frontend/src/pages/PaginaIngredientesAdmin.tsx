@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 import BarraNavegacion from '../components/Navbar';
 import { BsPencilSquare, BsTrash } from 'react-icons/bs';
 import FormularioIngrediente from '../components/FormularioIngrediente';
-import { IngredienteSchema } from '../models/Ingrediente';
+import { Ingrediente } from '../models/Ingrediente';
 
 export default function PaginaIngredientesAdmin() {
-  const [ingredientes, setIngredientes] = useState<IngredienteSchema[]>([]);
+  const [ingredientes, setIngredientes] = useState<Ingrediente[]>([]);
   const [mostrarModal, setMostrarModal] = useState(false);
-  const [ingredienteEditar, setIngredienteEditar] = useState<IngredienteSchema | undefined>(undefined);
+  const [ingredienteEditar, setIngredienteEditar] = useState<Ingrediente| undefined>(undefined);
 
   const cargarIngredientes = async () => {
     try {
@@ -15,7 +15,7 @@ export default function PaginaIngredientesAdmin() {
         credentials: 'include',
       });
       if (!res.ok) throw new Error('No se pudieron obtener ingredientes');
-      const data: IngredienteSchema[] = await res.json();
+      const data: Ingrediente[] = await res.json();
       setIngredientes(data);
     } catch (err) {
       console.error(err);
@@ -42,9 +42,8 @@ export default function PaginaIngredientesAdmin() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-xl font-extrabold text-red-500 tracking-tight">
-                Ingredientes (Admin)
+                Ingredientes
               </h1>
-              <p className="text-xs text-gray-400 font-medium">Control de stock de materias primas y alérgenos</p>
             </div>
             
             <button 

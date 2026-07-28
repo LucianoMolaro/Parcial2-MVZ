@@ -51,6 +51,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         });
         if (!res.ok) throw new Error("Error al salir");
         setUser(null);
+
     };
 
   return (

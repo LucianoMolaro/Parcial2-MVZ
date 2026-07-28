@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthUser } from '../context/AuthContext';
+import { BsPersonCircle } from 'react-icons/bs';
 
 export default function PaginaLogin() {
   const { login } = useAuthUser()
@@ -15,7 +16,7 @@ export default function PaginaLogin() {
   };
 
   const irARegistro = () => {
-    navigate('/registro'); // Redirección a la ruta de registro
+    navigate('/registro');
   };
 
   return (
@@ -26,15 +27,12 @@ export default function PaginaLogin() {
         
         {/* Encabezado / Logo */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-[#FFB703] rounded-xl font-bold text-xl text-[#1E1E24] shadow-xs">
-            🍔
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-transparent rounded-xl font-bold text-xl text-[#1E1E24] shadow-xs">
+            <BsPersonCircle className='w-8 h-8'></BsPersonCircle>
           </div>
           <h1 className="text-xl font-extrabold text-[#1E1E24] tracking-tight">
-            ¡Qué bueno <span className="text-[#E63946]">verte de nuevo!</span>
+            Ingresar
           </h1>
-          <p className="text-xs text-gray-400 font-medium">
-            Ingresa tus datos para pedir tus antojos
-          </p>
         </div>
 
         {/* Formulario */}
@@ -77,6 +75,7 @@ export default function PaginaLogin() {
             
             {/* Botón: Ingresar (Principal) */}
             <button
+              onSubmit={()=>login}
               type="submit"
               className="w-full bg-[#E63946] hover:bg-opacity-95 text-white font-extrabold text-xs py-2.5 px-4 rounded-lg tracking-wider uppercase transition-all shadow-xs active:scale-98 focus:outline-none"
             >
