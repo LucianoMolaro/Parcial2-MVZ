@@ -9,10 +9,9 @@ from app.core.deps import *
 from app.modules.Auth import service as authService
 from app.modules.Usuario.model import Usuario
 from app.modules.Usuario.schema import UsuarioLogin, UsuarioRead
+from app.core.WsManager import ws_manager
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
-
-
 
 @router.post("/login", response_model= UsuarioRead)
 def login(data: UsuarioLogin, response: Response, uow: UnitOfWork = Depends(get_uow)):
@@ -25,6 +24,7 @@ def login(data: UsuarioLogin, response: Response, uow: UnitOfWork = Depends(get_
         samesite="lax",
         secure=False
     )
+    ws_manager.connect(data.websocket, usuario.id)
     return usuario
 
 

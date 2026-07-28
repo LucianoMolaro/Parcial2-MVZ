@@ -1,14 +1,26 @@
 import { useEffect, useState } from "react";
+import { useWebSocket } from "../context/WebSocketContext";
 
 
 export default function PaginaPago() {
   const [cargando, setCargando] = useState(false);
+  const { lastEvent } = useWebSocket()
+
+  useEffect(()=>{
+    console.log("Evento recibido:", lastEvent)
+  }, [lastEvent])
 
   useEffect(() => {
     if (window.location.origin.includes("devtunnels.ms")) {
       window.location.replace("http://localhost:5173");
     }
   }, []);
+
+  function mostrar(){
+    console.log("lastEvent:", lastEvent)
+  }
+
+
 
   const pagar = async () => {
     try {
@@ -26,7 +38,7 @@ export default function PaginaPago() {
         throw new Error("No se pudo iniciar el pago");
       }
       const data = await res.json();
-      window.location.href = data.init_point;
+      // window.location.href = data.init_point;
     } catch (error) {
       console.error(error);
       alert("Error al iniciar el pago");
@@ -63,6 +75,7 @@ export default function PaginaPago() {
           {cargando ? "Redirigiendo..." : "Pagar"}
         </button>
       </div>
+      <button onClick={mostrar}>BUUTON</button>
     </div>
   );
 }

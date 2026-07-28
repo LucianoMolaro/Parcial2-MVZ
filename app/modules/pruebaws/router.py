@@ -1,7 +1,7 @@
 
 import uuid
 
-from fastapi import APIRouter, WebSocket
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from app.core.WsManager import WsEvent, ws_manager
 from app.modules import Rol
@@ -9,17 +9,17 @@ from app.modules import Rol
 
 router = APIRouter(prefix="/ws")
 
-@router.websocket("/prueba")
-async def websocket_prueba(websocket: WebSocket):
-
-    client_id = str(uuid.uuid4())
-
+@router.websocket("/conectar")
+async def websocket_endpoint(websocket: WebSocket):
+    client_id = "1234"
     await ws_manager.connect(websocket, client_id)
-
+    print("WS conectado")
     try:
-        await ws_manager.listen(client_id)
-    finally:
-        await ws_manager.disconnect(client_id)
+        await websocket.receive()
+    except WebSocketDisconnect:
+        ws_manager.disconnect(client_id)
+        print("WS desconectado")
+
 
 
 

@@ -8,16 +8,9 @@ export default function PaginaSincronizacion() {
     
 
     useEffect(() => {
-        const ws = new WebSocket(
-            "ws://localhost:8000/ws/prueba" // cambia por tu endpoint
-        );
+        const ws = new WebSocket("ws://localhost:8000/ws/prueba");
 
         socket.current = ws;
-
-        ws.onopen = () => {
-            console.log("Conectado");
-            setEstado("Conectado");
-        };
 
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);

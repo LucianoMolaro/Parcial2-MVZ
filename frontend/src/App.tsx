@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useEffect } from "react";
+// import { useEffect } from "react";
 import PaginaLogin from "./pages/PaginaLogin";
 import PaginaCarrito from "./pages/PaginaCarrito";
 import PaginaPedidos from "./pages/PaginaPedidos";
@@ -14,7 +14,7 @@ import PaginaProductosAdmin from "./pages/PaginaProductosAdmin";
 import PaginaIngredientesAdmin from "./pages/PaginaIngredientesAdmin";
 import PaginaUsuariosAdmin from "./pages/PaginaUsuariosAdmin";
 import { useAuthUser } from "./context/AuthContext";
-import { useWebSocket } from "./context/WebSocketContext";
+// import { useWebSocket } from "./context/WebSocketContext";
 // import CloudinaryUpload from "./pages/cloud";
 import PaginaPago from "./pages/mp";
 import PaginaSincronizacion from "./pages/page";
@@ -25,28 +25,28 @@ import PaginaSincronizacion from "./pages/page";
 
 export default function App() {
   const { user } = useAuthUser();
-  const { connect, disconnect, joinRoom, status } = useWebSocket();
+  // const { connect, disconnect, joinRoom, status } = useWebSocket();
 
-  useEffect(() => {
-    if (user) {
-      connect(`ws://localhost:8000/ws/${user.id}`, String(user.id));
-    } else {
-      disconnect();
-    }
-  }, [user?.id]);
+  // useEffect(() => {
+  //   if (user) {
+  //     connect(`ws://localhost:8000/ws/${user.id}`, String(user.id));
+  //   } else {
+  //     disconnect();
+  //   }
+  // }, [user?.id]);
 
-  useEffect(() => {
-    if (status !== "connected" || !user) return;
-    joinRoom(`pedido_${user.id}`);
-    const esAdmin = user.roles?.some(r => r.codigo === "ADMIN" || r.codigo === "PEDIDOS");
-    if (esAdmin) joinRoom("pedidos_admin");
-  }, [status, user?.id]);
+  // useEffect(() => {
+  //   if (status !== "connected" || !user) return;
+  //   joinRoom(`pedido_${user.id}`);
+  //   const esAdmin = user.roles?.some(r => r.codigo === "ADMIN" || r.codigo === "PEDIDOS");
+  //   if (esAdmin) joinRoom("pedidos_admin");
+  // }, [status, user?.id]);
 
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element= { <PaginaPago/> }/>
-        <Route path="/prueba" element= { <PaginaSincronizacion/> }/>
+        {/* <Route path="/prueba" element= { <PaginaSincronizacion/> }/>
         <Route path="/login" element= { <PaginaLogin/> }/>
         <Route path="/registro" element= { <PaginaRegistro/> }/>
         <Route path="/carrito" element= { <PrivateRoute rol={["CLIENTE"]}><PaginaCarrito/></PrivateRoute>}/>
@@ -57,7 +57,7 @@ export default function App() {
         <Route path="/admin/categorias" element= { <PrivateRoute rol={["ADMIN"]}><PaginaCategorias/></PrivateRoute>  }/>
         <Route path="/admin/dashboard" element= { <PrivateRoute rol={["ADMIN"]}><PaginaDashboard/></PrivateRoute> }/>
         <Route path="/admin/productos" element= { <PrivateRoute rol={["ADMIN"]}><PaginaProductosAdmin/></PrivateRoute> }/>
-        <Route path="/admin/usuarios" element= { <PrivateRoute rol={["ADMIN"]}><PaginaUsuariosAdmin/></PrivateRoute> }/>
+        <Route path="/admin/usuarios" element= { <PrivateRoute rol={["ADMIN"]}><PaginaUsuariosAdmin/></PrivateRoute> }/> */}
       </Routes>
     </BrowserRouter>
   );

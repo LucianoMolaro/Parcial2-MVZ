@@ -47,7 +47,7 @@ async def crear_pedido(
     # uow: UnitOfWork = Depends(get_uow),
     # current_user: Usuario = Depends(get_current_active_user),
 ):
-    return pedido_service.crear_pedido()
+    return await pedido_service.crear_pedido()
 
 
 @router.patch("/{pedido_id}/estado", response_model=PedidoRead)

@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import List, Optional
 
 from fastapi import HTTPException, status
+from app.core.WsManager import ws_manager
 
 from app.core.MercadoPago import crear_preferencia
 from app.core.UnitOfWork import UnitOfWork
@@ -66,7 +67,7 @@ TRANSICIONES: dict[str, list[str]] = {
 CANCELACION_CLIENT = {"PENDIENTE", "CONFIRMADO"}
 
 
-def crear_pedido():
+async def crear_pedido():
     # direccion = uow.direcciones.get_by_id(data.direccion)
 
     # if direccion is None or direccion.usuario_id != usuario.id:
@@ -167,6 +168,10 @@ def crear_pedido():
     #     + pedido.costo_envio
     #     - pedido.descuento
     # )
+
+    await ws_manager.broadcast("http://localhost:5173/login", "cambiarURL")
+    # connection.("http://localhost:5173/login", "cambiarURL")
+
     preference_data = {
         "items": [
             {

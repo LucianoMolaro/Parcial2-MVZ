@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import BarraNavegacion from '../components/Navbar';
 import { useCarrito } from '../context/CarritoContext';
 import { Producto } from '../models/Producto';
-import { useWsEvent } from '../context/WebSocketContext';
-import { WsEvent } from '../models/WebSockets';
+// import { useWsEvent } from '../context/WebSocketContext';
+// import { WsEvent } from '../models/WebSockets';
 
 interface Direccion { id: number; alias: string; calle1: string; altura: string; ciudad: string; }
 
@@ -31,10 +31,10 @@ export default function PaginaCarrito() {
       .catch(() => {});
   }, []);
 
-  useWsEvent('producto_sin_stock', (evt: WsEvent) => {
-    const d = evt.data as { producto_id: number };
-    setSinStock(prev => new Set([...prev, d.producto_id]));
-  });
+  // useWsEvent('producto_sin_stock', (evt: WsEvent) => {
+  //   const d = evt.data as { producto_id: number };
+  //   setSinStock(prev => new Set([...prev, d.producto_id]));
+  // });
 
   const itemsCarrito = state.items
     .map((item) => ({

@@ -1,4 +1,5 @@
 from typing import Optional
+from fastapi import WebSocket
 from sqlmodel import SQLModel
 
 from app.modules.DireccionEntrega.model import DireccionEntrega
@@ -9,6 +10,8 @@ from app.modules.Rol.model import Rol
 class UsuarioLogin(SQLModel):
     username: str
     password: str
+
+
 
 class UsuarioRead(SQLModel):
     id: int
