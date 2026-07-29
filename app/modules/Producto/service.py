@@ -43,6 +43,7 @@ def create(uow: UnitOfWork, data: ProductoCreate) -> Producto:
             precio=data.precio,
             descripcion=data.descripcion,
             disponible=data.disponible,
+            imagenes_url=data.imagenes_url,
             stock_cantidad=_calcular_stock(uow, data),
         )
         uow.productos.add(producto)
@@ -75,6 +76,7 @@ def update(uow: UnitOfWork, producto_id: int, data: ProductoCreate) -> Producto:
         producto.precio = data.precio
         producto.descripcion = data.descripcion
         producto.disponible = data.disponible
+        producto.imagenes_url = data.imagenes_url
         producto.stock_cantidad = _calcular_stock(uow, data)
 
         for link in uow.producto_categorias.get_by_producto(producto_id):

@@ -93,28 +93,28 @@ export default function PaginaIngredientesAdmin() {
                         <span
                           className={`font-bold text-stone-700`}
                         >
-                          {ing.stock_cantidad.toFixed(2)} {ing.unidad_medida.simbolo}
+                          {ing.stock_cantidad.toFixed(2)} {ing.unidad_medida?.simbolo}
                         </span>
                       </div>
 
                       <div className="flex items-center gap-1">
                         <span className="text-stone-500">Unidad:</span>
                         <span className="font-semibold text-stone-700">
-                          {ing.unidad_medida.nombre}
+                          {ing.unidad_medida?.nombre}
                         </span>
                       </div>
 
                       <div className="flex items-center gap-1">
                         <span className="text-stone-500">Símbolo:</span>
                         <span className="font-semibold text-stone-700">
-                          {ing.unidad_medida.simbolo}
+                          {ing.unidad_medida?.simbolo}
                         </span>
                       </div>
 
                       <div className="flex items-center gap-1">
                         <span className="text-stone-500">Tipo:</span>
                         <span className="font-semibold text-stone-700">
-                          {ing.unidad_medida.tipo}
+                          {ing.unidad_medida?.tipo}
                         </span>
                       </div>
                     </div>

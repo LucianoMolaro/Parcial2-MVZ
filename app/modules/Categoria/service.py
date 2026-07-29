@@ -5,23 +5,9 @@ from app.core.UnitOfWork import UnitOfWork
 from app.modules.Categoria.model import Categoria
 from app.modules.Categoria.schema import CategoriaCreate, CategoriaSchema
 
+
 def get_all(uow: UnitOfWork, parent_id: Optional[int] = None) -> List[Categoria]:
     return uow.categoria.get_by_parent(parent_id)
-
-
-# def get_tree(uow: UnitOfWork) -> list[CategoriaSchema]:
-#     all_cats = uow.categoria.get_all_habilitadas()
-#     by_id = {
-#         c.id: CategoriaSchema(id=c.id, nombre=c.nombre, descripcion=c.descripcion, parent_id=c.parent_id, subcategorias=[])
-#         for c in all_cats
-#     }
-#     roots = []
-#     for c in all_cats:
-#         if c.parent_id is None:
-#             roots.append(by_id[c.id])
-#         elif c.parent_id in by_id:
-#             by_id[c.parent_id].subcategorias.append(by_id[c.id])
-#     return roots
 
 
 def get_by_id(uow: UnitOfWork, categoria_id: int) -> Categoria:
@@ -35,18 +21,25 @@ def create(uow: UnitOfWork, data: CategoriaCreate) -> Categoria:
     with uow:
         if data.parent_id and not uow.categoria.get_by_id(data.parent_id):
             raise HTTPException(status_code=404, detail="Categoría padre no encontrada")
-        nueva = Categoria(nombre=data.nombre, descripcion=data.descripcion, parent_id=data.parent_id)
+        nueva = Categoria(
+            nombre=data.nombre,
+            descripcion=data.descripcion,
+            parent_id=data.parent_id,
+            imagen_url=data.imagen_url,
+        )
         return uow.categoria.add(nueva)
 
 
 def update(uow: UnitOfWork, categoria_id: int, data: CategoriaCreate) -> Categoria:
     with uow:
-        c = uow.categoria.get_habilitada(categoria_id)
+        c = uow.categoria.get_by_id(categoria_id)
         if not c:
             raise HTTPException(status_code=404, detail="Categoría no encontrada")
         c.nombre = data.nombre
         c.descripcion = data.descripcion
         c.parent_id = data.parent_id
+        c.imagen_url = data.imagen_url
+        c.habilitado = data.habilitado
         return c
 
 

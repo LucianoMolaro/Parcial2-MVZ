@@ -18,6 +18,7 @@ import { useAuthUser } from "./context/AuthContext";
 // import CloudinaryUpload from "./pages/cloud";
 import PaginaPago from "./pages/mp";
 import PaginaCatalogo from "./pages/ProductosPage";
+import PaginaPedidosControl from "./pages/PaginaPedidosControl";
 
 
 
@@ -51,6 +52,7 @@ export default function App() {
         <Route path="/registro" element= { <PaginaRegistro/> }/>
         <Route path="/carrito" element= { <PrivateRoute rol={["CLIENTE"]}><PaginaCarrito/></PrivateRoute>}/>
         <Route path="/usuarios/pedidos" element= { <PrivateRoute rol={["CLIENTE", "PEDIDOS", "ADMIN"]}><PaginaPedidos/></PrivateRoute> }/>
+        <Route path="/control/pedidos" element= { <PrivateRoute rol={["PEDIDOS", "ADMIN"]}><PaginaPedidosControl/></PrivateRoute> }/>
         <Route path="/pedidos/:id" element= { <PrivateRoute rol={["CLIENTE", "PEDIDOS"]}><PaginaDetallePedido/></PrivateRoute> }/>
         <Route path="/direcciones" element= {  <PrivateRoute rol={["CLIENTE"]}><PaginaDirecciones/></PrivateRoute> }/>
         <Route path="/admin/ingredientes" element= {  <PrivateRoute rol={["ADMIN", "STOCK"]}><PaginaIngredientesAdmin/></PrivateRoute>  }/>

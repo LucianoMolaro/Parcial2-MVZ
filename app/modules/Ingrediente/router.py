@@ -42,7 +42,7 @@ def editar_ingrediente(
     uow: UnitOfWork = Depends(get_uow),
     _=Depends(require_role(["ADMIN", "STOCK"])),
 ):
-    return ingrediente_service.update(uow, ingrediente_id, datos)
+    return ingrediente_service.update(uow, datos)
 
 
 @router.delete("/{ingrediente_id}", status_code=204)

@@ -41,7 +41,7 @@ def crear_categoria(
 @router.put("/{categoria_id}", response_model=CategoriaSchema)
 def editar_categoria(
     categoria_id: int,
-    datos: CategoriaSchema,
+    datos: CategoriaCreate,
     uow: UnitOfWork = Depends(get_uow),
     _=Depends(require_role(["ADMIN"])),
 ):

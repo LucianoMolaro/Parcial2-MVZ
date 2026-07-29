@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.core.deps import get_current_active_user, get_uow, require_role
 from app.core.UnitOfWork import UnitOfWork
-from app.core.WsManager import ws_manager, WsEvent
+from app.core.WsManager import ws_manager
 from app.modules.Usuario.model import Usuario
 from app.modules.Pedido.schema import PedidoCambiarEstado, PedidoCreate, PedidoRead
 from app.modules.Pedido import service as pedido_service
@@ -17,17 +17,14 @@ def _get_roles(uow: UnitOfWork, usuario_id: int) -> list[str]:
 
 @router.get("/", response_model=List[PedidoRead])
 def listar_pedidos(
-    offset: int = 0,
-    limit: Annotated[int, Query(le=100)] = 7,
     uow: UnitOfWork = Depends(get_uow),
-    current_user: Usuario = Depends(get_current_active_user),
+    _=Depends(require_role(["ADMIN", "PEDIDOS"])),
 ):
-    roles = _get_roles(uow, current_user.id)
-    filtro = None if any(r in ["ADMIN", "PEDIDOS"] for r in roles) else current_user.id
-    return pedido_service.get_all(uow, filtro, offset, limit)
+    return pedido_service.get_all(uow)
+
 
 @router.get("/usuario", response_model=List[PedidoRead])
-def listar_pedidos(
+def listar_pedidos_usuario(
     uow: UnitOfWork = Depends(get_uow),
     current_user: Usuario = Depends(get_current_active_user),
 ):
@@ -95,9 +92,7 @@ async def cancelar_pedido(
         PedidoCambiarEstado(estado_pedido_codigo="CANCELADO", motivo="Cancelado por ADMIN"),
         actor_id=current_user.id, es_cliente=False,
     )
-    evento = WsEvent(
-        event_type="pedido_estado_actualizado",
-        data={"pedido_id": pedido.id, "usuario_id": pedido.usuario_id, "estado_codigo": "CANCELADO"},
+    await ws_manager.broadcast(
+        {"pedido_id": pedido.id, "usuario_id": pedido.usuario_id, "estado_codigo": "CANCELADO"},
+        "pedido_estado_actualizado",
     )
-    await ws_manager.send_to_room("pedidos_admin", evento)
-    await ws_manager.send_to_room(f"pedido_{pedido.usuario_id}", evento)

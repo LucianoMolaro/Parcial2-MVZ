@@ -12,6 +12,7 @@ interface ModalProps {
 export default function FormularioCategoria({ isOpen, onClose, categoriaEditar, parentIdPreset }: ModalProps) {
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
+  const [url, setUrl] = useState('')
   const [habilitada, setHabilitada] = useState(true);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -30,12 +31,18 @@ useEffect(() => {
   if (categoriaEditar) {
     setNombre(categoriaEditar.nombre);
     setDescripcion(categoriaEditar.descripcion ?? '');
+    setHabilitada(categoriaEditar.habilitado);
     setSeleccionNiveles(
       categoriaEditar.parent_id ? [categoriaEditar.parent_id] : []
     );
+    if (categoriaEditar.imagen_url) {
+      setImagenes({ url: categoriaEditar.imagen_url, public_id: '' });
+    }
   } else {
     setNombre('');
     setDescripcion('');
+    setHabilitada(true);
+    setImagenes(undefined);
     setSeleccionNiveles(parentIdPreset ? [parentIdPreset] : []);
   }
 }, [categoriaEditar, parentIdPreset]);
@@ -113,6 +120,7 @@ useEffect(() => {
 const borrarUnaImagen = async (publicId: string): Promise<void> => {
   const resp = await fetch(`http://localhost:8000/cloudinary/delete/${publicId}`, {
     method: "DELETE",
+    credentials: "include",
   });
   if (!resp.ok) {
     throw new Error(`Error al borrar imagen: ${resp.status}`);
@@ -128,6 +136,7 @@ const subirUnaImagen = async (archivo: File): Promise<cloudinary> => {
   
       const resp = await fetch("http://localhost:8000/cloudinary/upload", {
         method: "POST",
+        credentials: "include",
         body: formData,
       });
   
@@ -135,6 +144,8 @@ const subirUnaImagen = async (archivo: File): Promise<cloudinary> => {
   
       const data: { ok: boolean; url: string; public_id: string } = await resp.json();
       if (!data.ok) throw new Error("El servidor indicó que la subida falló");
+
+      setUrl(data.url)
   
       return { url: data.url, public_id: data.public_id };
     };
@@ -144,10 +155,10 @@ const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
   if (!archivo) return;
   setSubiendo(true);
 
-  if(imagenes) borrarUnaImagen(imagenes.public_id)
+  if (imagenes?.public_id) await borrarUnaImagen(imagenes.public_id);
 
-  const subida = subirUnaImagen(archivo)
-  setImagenes(await subida);  
+  const subida = await subirUnaImagen(archivo);
+  setImagenes(subida);
     setSubiendo(false);
     e.target.value = "";
   };
@@ -155,7 +166,6 @@ const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
 const manejarEnvio = async (e: React.FormEvent) => {
   e.preventDefault();
 
-  console.log(imagenes?.url)
   const payload = {
     nombre,
     descripcion: descripcion || null,
@@ -164,7 +174,7 @@ const manejarEnvio = async (e: React.FormEvent) => {
         ? seleccionNiveles[seleccionNiveles.length - 1]
         : null,
     imagen_url: imagenes?.url ?? null,
-    habilitado: categoriaEditar?.habilitado ?? true,
+    habilitado: habilitada,
   };
 
   const url = categoriaEditar
@@ -241,7 +251,7 @@ const manejarEnvio = async (e: React.FormEvent) => {
             <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Multimedia</label>
             <div className="flex items-center space-x-2">
               <div className="w-10 h-10 rounded-xl bg-[#FAFAFA] border border-gray-100 border-dashed flex items-center justify-center overflow-hidden">
-                {true ? <img src={imagenes?.url} alt="Preview" className="w-full h-full object-cover" /> : <span className="text-sm">🖼️</span>}
+                {imagenes?.url ? <img src={imagenes.url} alt="Preview" className="w-full h-full object-cover" /> : <span className="text-sm">🖼️</span>}
               </div>
               <label className="bg-white border border-gray-200 hover:border-[#FFB703] text-gray-500 font-bold text-[11px] py-1.5 px-3 rounded-xl transition-all cursor-pointer shadow-xs active:scale-98">
                 <span>Cargar Imagen</span>

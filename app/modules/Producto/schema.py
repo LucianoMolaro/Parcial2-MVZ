@@ -33,6 +33,7 @@ class ProductoCreate(SQLModel):
     descripcion: Optional[str] = None
     disponible: bool = True
     stock_cantidad: int = 0
+    imagenes_url: list[str] = []
     categorias: list[ProductoCategoriaInput] = []
     ingredientes: list[ProductoIngredienteInput] = []
 

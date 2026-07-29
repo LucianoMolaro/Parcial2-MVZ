@@ -13,8 +13,8 @@ from app.modules.Pedido.model import Pedido
 from app.modules.Pedido.schema import FormaPago, PedidoCambiarEstado, PedidoCreate
 
 
-def get_all(uow: UnitOfWork, usuario_id_filter: Optional[int], offset: int, limit: int) -> List[Pedido]:
-    return uow.pedidos.get_all_filtrado(usuario_id_filter, offset, limit)
+def get_all(uow: UnitOfWork) -> List[Pedido]:
+    return uow.pedidos.get_all_filtrado(None, 0, None)
 
 
 def get_by_id(uow: UnitOfWork, pedido_id: int) -> Pedido:
@@ -22,8 +22,6 @@ def get_by_id(uow: UnitOfWork, pedido_id: int) -> Pedido:
     if not pedido:
         raise HTTPException(status_code=404, detail="Pedido no encontrado")
     return pedido
-
-
 
 
 TRANSICIONES: dict[str, list[str]] = {

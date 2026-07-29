@@ -115,8 +115,16 @@ class WsManager:
         return self.active_connections.get(client_id)
 
     async def broadcast(self, data: Any, event_type: str):
-        for connection in self.active_connections.values():
-            await connection.send(data, event_type)
+        muertas = []
+        for client_id, connection in self.active_connections.items():
+            try:
+                await connection.send(data, event_type)
+            except Exception as e:
+                logger.warning(f"Conexión {client_id} caída, se descarta: {e}")
+                muertas.append(client_id)
+
+        for client_id in muertas:
+            self.active_connections.pop(client_id, None)
 
     
     # def get_all_connections(self) -> List[str]:

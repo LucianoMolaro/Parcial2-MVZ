@@ -7,6 +7,7 @@ import { useFiltros } from '../context/FiltrosContext';
 import { useCarrito } from '../context/CarritoContext';
 import { Producto } from '../models/Producto';
 import {  CategoriaFiltro } from '../models/Categoria';
+import { useWebSocket } from '../context/WebSocketContext';
 
 
 
@@ -15,6 +16,7 @@ export default function PaginaCatalogo() {
   const { user } = useAuthUser();
   const { state, dispatch, limpiarFiltros } = useFiltros();
   const { agregar, cantidadDeItem } = useCarrito();
+  const { lastEvent } = useWebSocket()
 
   useEffect(() => {
   if (window.location.hostname.includes('devtunnels.ms')) {
@@ -31,12 +33,21 @@ export default function PaginaCatalogo() {
     pagina,
     filtroOpciones,
   } = state;
+
+    useEffect(()=>{
+      fetch('http://localhost:8000/productos/', { credentials: 'include' })
+      .then(r => r.json())
+      .then(setProductos)
+      .catch(() => {});
+  }, [lastEvent])
   
   const esAdmin = user?.roles?.some(r => r.codigo === 'ADMIN' || r.codigo === 'PEDIDOS') ?? false;
 
   const [productos, setProductos] = useState<Producto[]>([]);
   const [categoriasBackend, setCategoriasBackend] = useState<CategoriaFiltro[]>([]);
   const [sinStock, setSinStock] = useState<Set<number>>(new Set());
+
+
 
 
   useEffect(() => {
@@ -246,7 +257,7 @@ export default function PaginaCatalogo() {
                 <div className="absolute top-1.5 left-1.5 flex flex-row gap-1 z-10">
                 </div>
                 <img
-                  // src={producto.imagen}
+                  src={producto.imagenes_url?.[0] ?? ""}
                   alt={producto.nombre}
                   className="h-full w-auto object-contain drop-shadow-xs transform group-hover:scale-105 transition-transform duration-300"
                 />

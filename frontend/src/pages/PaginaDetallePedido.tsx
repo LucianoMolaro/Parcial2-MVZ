@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import BarraNavegacion from '../components/Navbar';
 import { useParams } from 'react-router-dom';
 import { useAuthUser } from '../context/AuthContext';
+import { useWebSocket } from '../context/WebSocketContext';
 
 const ESTADO_LABEL: Record<string, string> = {
   PENDIENTE: 'Confirmado',
@@ -37,6 +38,7 @@ interface PedidoInfo {
 export default function PaginaDetallePedido() {
     const { id } = useParams<{ id: string }>();
     const { user } = useAuthUser();
+    const { lastEvent } = useWebSocket()
     const [pedido, setPedido] = useState<PedidoInfo | null>(null);
 
     const esAdmin = user?.roles?.some(r => r.codigo === 'ADMIN' || r.codigo === 'PEDIDOS') ?? false;
@@ -46,6 +48,17 @@ export default function PaginaDetallePedido() {
         .then(r => r.json())
         .then(setPedido);
     }, [id]);
+
+    useEffect(()=>{
+      if(lastEvent?.event_type=="pedido_estado_actualizado"){
+        if(pedido?.id===lastEvent.data["pedido_id"]){
+          fetch(`http://localhost:8000/pedidos/${id}`, { credentials: 'include' })
+            .then(r => r.json())
+            .then(setPedido);
+        }
+      }
+      else return
+    }, [lastEvent])
 
     if (!pedido) return <><BarraNavegacion /><div className="p-8 text-center text-sm text-gray-400">Cargando...</div></>;
 

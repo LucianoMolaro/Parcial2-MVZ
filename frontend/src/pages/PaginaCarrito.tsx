@@ -13,6 +13,11 @@ export default function PaginaCarrito() {
   const [direccionId, setDireccionId] = useState('');
   const [formaPago, setFormaPago] = useState('');
   const [cargando, setCargando] = useState(false);
+  const [pagar, setPagar] = useState(true)
+
+  useEffect(() => {
+    setPagar(itemsCarrito.every(item => item.producto.stock_cantidad > 0));
+  }, [productosDetalle, state.items]);
 
   useEffect(() => {
     if (state.items.length === 0) return;
@@ -268,7 +273,7 @@ export default function PaginaCarrito() {
               )}
               <button
                 onClick={irAPagar}
-                disabled={botonDeshabilitado}
+                disabled={botonDeshabilitado && pagar}
                 className="w-full bg-[#E63946] hover:bg-opacity-95 disabled:bg-gray-200 text-white font-extrabold text-xs py-2.5 px-4 rounded-lg tracking-wider uppercase transition-all shadow-xs active:scale-98 focus:outline-none cursor-pointer disabled:cursor-not-allowed text-center"
               >
                 {cargando ? 'Procesando...' : 'Ir a Pagar'}

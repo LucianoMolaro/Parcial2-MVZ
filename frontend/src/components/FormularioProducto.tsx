@@ -80,7 +80,7 @@ export default function ModalNuevoProducto({ isOpen, onClose, productoEditar }: 
     const subidas = await Promise.all(
       Array.from(archivos).map((archivo) => subirUnaImagen(archivo))
     );
-
+    
     setImagenes((prev) => [...prev, ...subidas]);
     setSubiendo(false);
     e.target.value = "";
