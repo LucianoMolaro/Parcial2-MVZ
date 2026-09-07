@@ -10,9 +10,8 @@ class DireccionEntrega(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     usuario_id: int = Field(foreign_key="usuario.id")
     alias: str
-    calle1: str
+    calle: str
     altura: str
-    calle2: Optional[str] = Field(default=None)
     ciudad: str = Field(max_length=100)
     provincia: Optional[str] = Field(default=None, max_length=100)
     codigo_postal: Optional[str] = Field(default=None, max_length=10)
@@ -20,4 +19,4 @@ class DireccionEntrega(SQLModel, table=True):
     habilitado: bool = Field(default=True)
 
     usuario: Optional["Usuario"] = Relationship(back_populates="direcciones")
-    pedidos: list["Pedido"] = Relationship(back_populates="direccion_entrega")
+    pedidos: list["Pedido"] = Relationship(back_populates="direccion")

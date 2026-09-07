@@ -1,219 +1,225 @@
-import React, { useEffect, useState } from 'react';
-import { Categoria } from '../models/Categoria';
+import React, { Fragment, JSXElementConstructor, ReactDOM, ReactElement, ReactEventHandler, ReactNode, useEffect, useState } from 'react';
+import { CategoriaCreate, CategoriaRead } from '../models/Categoria';
 import { cloudinary } from '../models/Cloudinary';
+import { BsChevronRight, BsXLg, BsXSquare } from 'react-icons/bs';
 
 interface ModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  categoriaEditar?: Categoria;
-  parentIdPreset?: number;
+  isOpen: boolean
+  onClose: () => void
+  categoriaEditar: CategoriaRead | null
+  // parentPreset: CategoriaRead | null
+  ruta: CategoriaRead[]
+  categorias: CategoriaRead[]
 }
 
-export default function FormularioCategoria({ isOpen, onClose, categoriaEditar, parentIdPreset }: ModalProps) {
-  const [nombre, setNombre] = useState('');
-  const [descripcion, setDescripcion] = useState('');
-  const [url, setUrl] = useState('')
-  const [habilitada, setHabilitada] = useState(true);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
-  const [seleccionNiveles, setSeleccionNiveles] = useState<number[]>([]);
-  const [imagenes, setImagenes] = useState<cloudinary | undefined>(undefined);
+export default function FormularioCategoria({ isOpen, onClose, categoriaEditar, ruta, categorias }: ModalProps) {
 
-  const [subiendo, setSubiendo] = useState(false);
+  const [formulario, setFormulario] = useState({
+    nombre: "",
+    descripcion: "", 
+    parent_id: null as number | null,
+  })
+  const [categoriasOption, setCategoriasOption] = useState<CategoriaRead[]>([])
+  const [original, setOriginal] = useState<CategoriaRead | null>(null)
+  const [imagen, setImagen] = useState<File | null>(null);
+  const [cloudinary, setCloudinary] = useState<cloudinary | null>(null)
 
-  useEffect(() => {
-    fetch('http://localhost:8000/categorias/', { credentials: 'include' })
-      .then(r => r.json())
-      .then(setCategorias);
-  }, []);
+  const [categoriasPrincipales, setCategorias] = useState<CategoriaRead[]>([]);
+  const [historialCategoria, setHistorialCategoria] = useState<CategoriaRead[]>([])
+  const hayHistorial = historialCategoria.length > 0
 
-useEffect(() => {
-  if (categoriaEditar) {
-    setNombre(categoriaEditar.nombre);
-    setDescripcion(categoriaEditar.descripcion ?? '');
-    setHabilitada(categoriaEditar.habilitado);
-    setSeleccionNiveles(
-      categoriaEditar.parent_id ? [categoriaEditar.parent_id] : []
-    );
-    if (categoriaEditar.imagen_url) {
-      setImagenes({ url: categoriaEditar.imagen_url, public_id: '' });
-    }
-  } else {
-    setNombre('');
-    setDescripcion('');
-    setHabilitada(true);
-    setImagenes(undefined);
-    setSeleccionNiveles(parentIdPreset ? [parentIdPreset] : []);
-  }
-}, [categoriaEditar, parentIdPreset]);
 
-  if (!isOpen) return null;
+  useEffect(()=>{
+    if(!isOpen) return
 
-  const manejarCambioSelect = (nivelIndex: number, valor: string) => {
-    setSeleccionNiveles(prev => {
-      const nuevoHistorial = prev.slice(0, nivelIndex);
-      if (valor !== '') nuevoHistorial.push(Number(valor));
-      return nuevoHistorial;
-    });
-  };
+    setHistorialCategoria(ruta)
+    setCategorias(categorias)
+    if(ruta.length>0){setCategoriasOption(ruta)}else{setCategoriasOption(categorias)}
 
-  const renderizarSelectoresCascada = () => {
-    const selectoresJSX = [];
-    let opcionesActuales = categorias.filter(cat => cat.parent_id === null);
-
-    selectoresJSX.push(
-      <div key="nivel-0" className="space-y-1">
-        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-          Categoría Principal
-        </label>
-        <select
-          value={seleccionNiveles[0] ?? ''}
-          onChange={(e) => manejarCambioSelect(0, e.target.value)}
-          className="w-full px-2.5 py-1.5 text-xs bg-[#FAFAFA] border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none focus:border-[#FFB703] transition-colors font-medium cursor-pointer"
-        >
-          <option value="">Categoria principal</option>
-          {opcionesActuales.map(cat => (
-            <option key={cat.id} value={cat.id}>
-              {cat.nombre}
-            </option>
-          ))}
-        </select>
-      </div>
-    );
-
-    for (let i = 0; i < seleccionNiveles.length; i++) {
-      const idSeleccionado = seleccionNiveles[i];
-
-      const categoriaEncontrada = categorias.find(c => c.id === idSeleccionado);
-
-      if (categoriaEncontrada?.subcategorias.length) {
-        opcionesActuales = categoriaEncontrada.subcategorias;
-        const siguienteNivelIndex = i + 1;
-
-        selectoresJSX.push(
-          <div key={`nivel-${siguienteNivelIndex}`} className="space-y-1 animate-fadeIn">
-            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-              Subcategoría
-            </label>
-            <select
-              value={seleccionNiveles[siguienteNivelIndex] ?? ''}
-              onChange={(e) => manejarCambioSelect(siguienteNivelIndex, e.target.value)}
-              className="w-full px-2.5 py-1.5 text-xs bg-[#FAFAFA] border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none focus:border-[#FFB703] transition-colors font-medium cursor-pointer"
-            >
-              <option value="">Dentro de...</option>
-              {opcionesActuales.map(sub => (
-                <option key={sub.id} value={sub.id}>
-                  {sub.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-        );
-      } else {
-        break;
+    if(!!categoriaEditar){
+      setOriginal(categoriaEditar)
+      setFormulario({
+        nombre: categoriaEditar.nombre,
+        descripcion: categoriaEditar.descripcion,
+        parent_id: categoriaEditar.parent_id ?? null,
+      })
+      setCloudinary(categoriaEditar.cloudinary)
+      if(ruta.length > 0) {
+        setFormulario({...formulario, parent_id: ruta[ruta.length - 1].id})
+        // cargarRuta(parentIdPreset)
+        // obtenerCategoria()
       }
     }
+  }, [isOpen])
 
-    return selectoresJSX;
+  useEffect(()=>{
+
+    console.log(formulario)
+  }, [formulario])
+
+  const borrarUnaImagen = async (publicId: string): Promise<void> => {
+    const resp = await fetch(`http://localhost:8000/cloudinary/delete/${publicId}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    if (!resp.ok) {
+      throw new Error(`Error al borrar imagen: ${resp.status}`);
+    }
+    const data: { ok: boolean; detail: string } = await resp.json();
+    if (!data.ok) throw new Error("El servidor indicó que el borrado falló");
   };
 
-const borrarUnaImagen = async (publicId: string): Promise<void> => {
-  const resp = await fetch(`http://localhost:8000/cloudinary/delete/${publicId}`, {
-    method: "DELETE",
-    credentials: "include",
-  });
-  if (!resp.ok) {
-    throw new Error(`Error al borrar imagen: ${resp.status}`);
+  const subirUnaImagen = async (archivo: File) => {
+        const formData = new FormData();
+        formData.append("file", archivo);
+        formData.append("folder", "prueba");
+    
+        const resp = await fetch("http://localhost:8000/cloudinary/upload", {
+          method: "POST",
+          credentials: "include",
+          body: formData,
+        });
+    
+        if (!resp.ok) throw new Error(`Error al subir: ${resp.status}`);
+    
+        return await resp.json();
+        
+      };
+    
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const archivo = e.target.files?.[0];
+    if (!archivo) return;
+    setImagen(archivo)
   }
-  const data: { ok: boolean; detail: string } = await resp.json();
-  if (!data.ok) throw new Error("El servidor indicó que el borrado falló");
-};
+  
+  const navegarAHistorial = (index: number) => {
+    if (index === -1) {
+      setHistorialCategoria([]);
+      setCategoriasOption(categoriasPrincipales);
+      return;
+    }
+    const nuevoHistorial = historialCategoria.slice(0, index + 1);
 
-const subirUnaImagen = async (archivo: File): Promise<cloudinary> => {
-      const formData = new FormData();
-      formData.append("file", archivo);
-      formData.append("folder", "prueba");
-  
-      const resp = await fetch("http://localhost:8000/cloudinary/upload", {
-        method: "POST",
-        credentials: "include",
-        body: formData,
-      });
-  
-      if (!resp.ok) throw new Error(`Error al subir: ${resp.status}`);
-  
-      const data: { ok: boolean; url: string; public_id: string } = await resp.json();
-      if (!data.ok) throw new Error("El servidor indicó que la subida falló");
+    setHistorialCategoria(nuevoHistorial);
+    const categoria = nuevoHistorial[nuevoHistorial.length - 1];
 
-      setUrl(data.url)
-  
-      return { url: data.url, public_id: data.public_id };
-    };
-  
-const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  const archivo = e.target.files?.[0];
-  if (!archivo) return;
-  setSubiendo(true);
-
-  if (imagenes?.public_id) await borrarUnaImagen(imagenes.public_id);
-
-  const subida = await subirUnaImagen(archivo);
-  setImagenes(subida);
-    setSubiendo(false);
-    e.target.value = "";
+    setCategoriasOption(categoria.subcategorias ?? categoriasPrincipales);
   };
+
+  const agregarCategoria = (id: number) => {
+    const cat = categoriasOption.find(c => c.id == id)
+    if(!cat) return
+
+    setFormulario({...formulario, parent_id: id})
+    setHistorialCategoria(prev => [...prev, cat])
+    setCategoriasOption(cat.subcategorias ?? [])
+  }
+
+  const eliminarHistorial = () => {
+    setHistorialCategoria([])
+    setFormulario({...formulario, parent_id: null})
+    setCategoriasOption(categoriasPrincipales)
+  }
+ 
+  const limpiarFormulario = ()=>{
+    setFormulario({
+      nombre: "",
+      descripcion: "", 
+      parent_id: null,
+    })
+    setImagen(null)
+    onClose();
+  }
+
 
 const manejarEnvio = async (e: React.FormEvent) => {
   e.preventDefault();
 
-  const payload = {
-    nombre,
-    descripcion: descripcion || null,
-    parent_id:
-      seleccionNiveles.length > 0
-        ? seleccionNiveles[seleccionNiveles.length - 1]
-        : null,
-    imagen_url: imagenes?.url ?? null,
-    habilitado: habilitada,
+  let imagenSubida = cloudinary;
+
+  if (imagen) {
+    imagenSubida = await subirUnaImagen(imagen);
+
+    if (categoriaEditar) {
+      await borrarUnaImagen(categoriaEditar.cloudinary.public_id);
+    }
+  }
+
+  if (!imagenSubida) {
+    return;
+  }
+
+  const datos: CategoriaCreate = {
+    ...formulario,
+    cloudinary: imagenSubida
   };
 
-  const url = categoriaEditar
-    ? `http://localhost:8000/categorias/${categoriaEditar.id}`
-    : "http://localhost:8000/categorias/crear";
+  if (categoriaEditar) {
 
-  const method = categoriaEditar ? "PUT" : "POST";
+    if (
+      original &&
+      original.nombre === formulario.nombre &&
+      original.descripcion === formulario.descripcion &&
+      original.parent_id === formulario.parent_id
+    ) {
+      onClose();
+      return;
+    }
 
-  const res = await fetch(url, {
-    method,
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+    const res = await fetch(
+      `http://localhost:8000/categorias/${categoriaEditar.id}`,
+      {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(datos)
+      }
+    );
 
-  if (res.ok) {
-    onClose();
+    if (res.ok) {
+      limpiarFormulario();
+    }
+
+  } else {
+
+    const res = await fetch(
+      "http://localhost:8000/categorias/crear",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(datos)
+      }
+    );
+
+    if (res.ok) {
+      limpiarFormulario();
+    }
   }
 };
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
 
       {/* CAPA DE DESENFOQUE OSCURA (Backdrop) */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-xs" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-xs" />
 
       {/* CONTENEDOR VENTANA MODAL (Sutil y compacta) */}
-      <div className="relative w-full max-w-sm bg-white rounded-2xl border border-gray-100 shadow-xl p-5 space-y-4 z-10 max-h-[90vh] overflow-y-auto scrollbar-hide">
+      <div className="relative w-full max-w-screen-sm bg-white rounded-2xl border border-gray-100 shadow-xl p-5 space-y-4 z-10 max-h-[90vh] overflow-y-auto scrollbar-hide">
 
         {/* Encabezado del modal */}
         <div className="flex items-start justify-between">
           <div className="space-y-0.5">
-            <h2 className="text-base font-black text-[#1E1E24] tracking-tight">
+            <h2 className="text-base font-black text-[#1E1E24] tracking-tight ">
               {categoriaEditar ? 'Editar' : 'Nueva'} <span className="text-[#E63946]">Categoría</span>
             </h2>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-[#E63946] font-black text-sm p-1 cursor-pointer">✕</button>
+          <button type="button" onClick={onClose} className="text-gray-400 hover:text-[#E63946] font-black text-sm p-1 cursor-pointer"><BsXLg></BsXLg></button>
         </div>
 
         <form onSubmit={manejarEnvio} className="space-y-3.5">
@@ -224,8 +230,8 @@ const manejarEnvio = async (e: React.FormEvent) => {
               id="nombre"
               type="text"
               required
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
+              value={formulario.nombre}
+              onChange={(e) => setFormulario({...formulario, nombre: e.target.value})}
               className="w-full px-2.5 py-1.5 text-xs bg-[#FAFAFA] border border-gray-100 rounded-xl text-[#1E1E24] placeholder-gray-400 focus:outline-none focus:border-[#FFB703] transition-colors font-medium"
             />
           </div>
@@ -236,37 +242,81 @@ const manejarEnvio = async (e: React.FormEvent) => {
             <textarea
               id="descripcion"
               rows={2}
-              value={descripcion}
-              onChange={(e) => setDescripcion(e.target.value)}
+              value={formulario.descripcion}
+              onChange={(e) => setFormulario({...formulario, descripcion: e.target.value})}
               className="w-full px-2.5 py-1.5 text-xs bg-[#FAFAFA] border border-gray-100 rounded-xl text-[#1E1E24] placeholder-gray-400 focus:outline-none focus:border-[#FFB703] transition-colors font-medium resize-none leading-normal"
             />
           </div>
-          {/* Renderizado dinámico de los Selects en cascada */}
-          <div className="space-y-3">
-            {renderizarSelectoresCascada()}
+          
+
+          {/* Ruta */} {/* Renderizado dinámico de los Selects en cascada */}
+          <div className="relative space-y-1 bg-white border border-gray-100 p-2 rounded-xl shadow-xs">
+            <label htmlFor="descripcion" className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+              Categorias mayores
+            </label>
+
+            <button
+              type="button"
+              title='Eliminar categorias'
+              className={`absolute top-1 right-2 p-1 rounded-md hover:bg-red-500 hover:text-white transition-all duration-200 ${
+                !hayHistorial ? 'hidden' : ''
+              }`}
+              onClick={() => eliminarHistorial()}
+            >
+              <BsXLg className="w-4 h-4"/>
+            </button>
+
+            <div
+              className={`flex flex-wrap items-center gap-x-1.5 text-[18px] font-semibold 
+                ${!hayHistorial ? 'hidden' : ''}
+              `}
+            >
+              {historialCategoria.map((cat, index) => (
+                <Fragment key={cat.id}>
+                  <button
+                    className="text-gray-700 border-none bg-none text-[14px] hover:text-red-400 transition-all duration-300 ease-in-out"
+                    onClick={() => navegarAHistorial(index)}
+                  >
+                    {cat.nombre}
+                  </button>
+
+                  <BsChevronRight className="text-gray-600 w-4 h-4" />
+
+                  <span className="text-red-400 border-none bg-none text-[18px] transition-all duration-300 ease-in-out">
+                    {formulario.nombre}
+                  </span>
+                </Fragment>
+              ))}
+            </div>
+
+            <select
+              name="parent_id"
+              value={formulario.parent_id ?? ""}
+              onChange={(e) => agregarCategoria(Number(e.target.value))}
+              disabled={categoriasOption.length == 0}
+            >
+              <option value="">Subcategoria de...</option>
+              {categoriasOption.map((categoria) => (
+                <option key={categoria.id} value={categoria.id}>
+                  {categoria.nombre}
+                </option>
+              ))}
+            </select>
           </div>
+
 
           {/* Subida de Imagen Sutil */}
           <div className="space-y-1">
-            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Multimedia</label>
+            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Imagen</label>
             <div className="flex items-center space-x-2">
               <div className="w-10 h-10 rounded-xl bg-[#FAFAFA] border border-gray-100 border-dashed flex items-center justify-center overflow-hidden">
-                {imagenes?.url ? <img src={imagenes.url} alt="Preview" className="w-full h-full object-cover" /> : <span className="text-sm">🖼️</span>}
+                {!!imagen && <img src={URL.createObjectURL(imagen)} alt="Preview" className="w-full h-full object-cover" />}
               </div>
               <label className="bg-white border border-gray-200 hover:border-[#FFB703] text-gray-500 font-bold text-[11px] py-1.5 px-3 rounded-xl transition-all cursor-pointer shadow-xs active:scale-98">
                 <span>Cargar Imagen</span>
                 <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
               </label>
             </div>
-          </div>
-
-          {/* Switch de Habilitación */}
-          <div className="flex items-center space-x-2 pt-0.5 select-none">
-            <label className="relative flex items-center cursor-pointer">
-              <input type="checkbox" checked={habilitada} onChange={(e) => setHabilitada(e.target.checked)} className="sr-only peer" />
-              <div className="w-7 h-4 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500"></div>
-            </label>
-            <span className="text-[11px] font-bold text-[#1E1E24]">Habilitar inmediatamente</span>
           </div>
 
           {/* Botones de Acción de la Base */}

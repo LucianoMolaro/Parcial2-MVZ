@@ -9,7 +9,7 @@ from app.modules.Ingrediente import service as ingrediente_service
 router = APIRouter(prefix="/ingredientes", tags=["Ingredientes"])
 
 
-@router.get("/", response_model=list[IngredienteSchema])
+@router.get("/todos", response_model=list[IngredienteSchema])
 def listar_ingredientes(
     uow: UnitOfWork = Depends(get_uow),
     _=Depends(get_current_active_user),
@@ -21,12 +21,12 @@ def listar_ingredientes(
 def obtener_ingrediente(
     ingrediente_id: int,
     uow: UnitOfWork = Depends(get_uow),
-    _=Depends(get_current_active_user),
+    _=Depends(require_role(["ADMIN", "STOCK"])),
 ):
     return ingrediente_service.get_by_id(uow, ingrediente_id)
 
 
-@router.post("/", response_model=IngredienteSchema, status_code=201)
+@router.post("/crear", response_model=IngredienteSchema, status_code=201)
 def crear_ingrediente(
     data: IngredienteCreate,
     uow: UnitOfWork = Depends(get_uow),
@@ -35,14 +35,14 @@ def crear_ingrediente(
     return ingrediente_service.create(uow, data)
 
 
-@router.put("/{ingrediente_id}", response_model=IngredienteSchema)
+@router.put("/editar/{ingrediente_id}", response_model=IngredienteSchema)
 def editar_ingrediente(
     ingrediente_id: int,
-    datos: IngredienteUpdate,
+    datos: IngredienteCreate,
     uow: UnitOfWork = Depends(get_uow),
     _=Depends(require_role(["ADMIN", "STOCK"])),
 ):
-    return ingrediente_service.update(uow, datos)
+    return ingrediente_service.update(uow, datos, ingrediente_id)
 
 
 @router.delete("/{ingrediente_id}", status_code=204)

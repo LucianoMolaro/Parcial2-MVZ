@@ -10,21 +10,15 @@ from app.modules.Usuario.model import Usuario
 router = APIRouter(prefix="/ws")
 
 @router.websocket("/conectar")
-async def websocket_endpoint(
-    websocket: WebSocket,
-    ):
+async def websocket_endpoint(websocket: WebSocket):
     client_id = uuid.uuid4()
     await ws_manager.connect(websocket, client_id)
     print("WS conectado")
     try:
-        # while True:
-            await websocket.receive()
+        await websocket.receive()
     except WebSocketDisconnect:
         await ws_manager.disconnect(client_id)
         print("WS desconectado")
-        
-
-
 
 
 # @router.get("/mensaje", status_code=200)

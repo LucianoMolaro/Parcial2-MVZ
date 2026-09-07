@@ -12,6 +12,7 @@ import {
   ReactNode,
 } from "react";
 import { WsContextType, WsEvent } from "../models/WebSockets";
+import { useAuthUser } from "./AuthContext";
 
 const WsContext = createContext<WsContextType | null>(null);
 
@@ -28,7 +29,7 @@ const WsContext = createContext<WsContextType | null>(null);
 
 export function WebSocketProvider({ children }: { children: ReactNode }){
 
-
+  const { user } = useAuthUser()
   const[lastEvent,setLastEvent]=useState<WsEvent | null>(null)
   // const isManuallyClosed = useRef(false);
 
@@ -172,7 +173,9 @@ export function WebSocketProvider({ children }: { children: ReactNode }){
   // ==================== Auto-connect ====================
 
   useEffect(() => {
-        const ws = new WebSocket("ws://localhost:8000/ws/conectar")
+    if(!user) return;
+    
+    const ws = new WebSocket("ws://localhost:8000/ws/conectar")
 
         ws.onopen = () => {
           console.log("🟢 WebSocket conectado");
@@ -189,8 +192,8 @@ export function WebSocketProvider({ children }: { children: ReactNode }){
 
         return () => {
           ws.close()
-        }
-    }, [])
+    }
+    }, [user])
 
   return <WsContext.Provider value={{ lastEvent }}>{children}</WsContext.Provider>;
 }

@@ -1,7 +1,7 @@
 from typing import List, Optional
 from sqlmodel import SQLModel
 
-from app.modules.Categoria.schema import CategoriaSchema
+from app.modules.Categoria.schema import CategoriaRead
 from app.modules.ProductoIngrediente.schema import ProductoIngredienteRead
 
 
@@ -47,5 +47,5 @@ class ProductoSchema(SQLModel):
     stock_cantidad: int
     habilitado: bool
     imagenes_url: list[str] = []
-    categorias: list[CategoriaSchema] = []
+    categorias: list[CategoriaRead] = []
     ingredientes: list[ProductoIngredienteRead] = []

@@ -1,4 +1,4 @@
-from typing import Generic, TypeVar, Optional, List, Type
+from typing import Any, Generic, TypeVar, Optional, List, Type
 from sqlmodel import SQLModel, Session, select, update
 
 T = TypeVar("T", bound=SQLModel)

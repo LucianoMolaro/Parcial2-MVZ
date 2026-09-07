@@ -1,4 +1,4 @@
-export interface UnidadMedidaSchema {
+export interface UnidadMedidaRead {
   id: number;
   nombre: string;
   simbolo: string;

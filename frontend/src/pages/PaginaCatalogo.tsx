@@ -19,7 +19,7 @@ export default function PaginaCatalogo() {
   const { lastEvent } = useWebSocket()
 
   useEffect(() => {
-  if (window.location.hostname.includes('devtunnels.ms')) {
+  if (window.location.hostname.includes('devtunnels.ms') || location.pathname!="/") {
     window.location.href = 'http://localhost:5173';
   }
 }, []);
@@ -58,7 +58,7 @@ export default function PaginaCatalogo() {
   }, [pagina]);
 
   useEffect(() => {
-    fetch('http://localhost:8000/categorias/')
+    fetch('http://localhost:8000/categorias/catalogo')
       .then(r => r.json())
       .then((data: { id: number; nombre: string; parent_id: number | null }[]) => {
         setCategoriasBackend(data.map(c => ({

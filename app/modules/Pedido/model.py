@@ -6,9 +6,10 @@ from sqlmodel import Field, Relationship, SQLModel
 from app.modules.EstadoPedido.model import EstadoPedido
 from app.modules.FormaPago.model import FormaPago
 from app.modules.Pago.model import Pago
+from app.modules.DireccionEntrega.model import DireccionEntrega
 if TYPE_CHECKING:
     from app.modules.DetallePedido.model import DetallePedido
-    from app.modules.DireccionEntrega.model import DireccionEntrega
+
 
     from app.modules.HistorialEstadoPedido.model import HistorialEstadoPedido
     from app.modules.Usuario.model import Usuario
@@ -35,6 +36,13 @@ class Pedido(SQLModel, table=True):
         "cascade": "all, delete-orphan",
         "lazy": "selectin"
     })
+
+    direccion: DireccionEntrega = Relationship(
+    back_populates="pedidos",  
+    sa_relationship_kwargs={
+        "lazy": "selectin"
+    })
+
     usuario: Optional["Usuario"] = Relationship(back_populates="pedidos")
     forma_pago: Optional["FormaPago"] = Relationship()
     direccion_entrega: Optional["DireccionEntrega"] = Relationship(back_populates="pedidos")
@@ -54,9 +62,3 @@ class Pedido(SQLModel, table=True):
         }
     )
 
-    # PedidoRead pide el campo "direccion", pero la relación se llama
-    # "direccion_entrega". Con esto alcanza para serializar directo,
-    # sin necesitar un _cargar_detalles armando el objeto a mano.
-    @property
-    def direccion(self) -> Optional["DireccionEntrega"]:
-        return self.direccion_entrega

@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class WsEvent:
     """Modelo para eventos de WebSocket"""
     
-    def __init__(self, event_type: str, data: Any = None, sender_id: str = None):
+    def __init__(self, event_type: str, data: Any = None):
         self.event_type = event_type
         self.data = data
     
@@ -40,10 +40,7 @@ class WsConnection:
         # self.metadata: Dict = {}
     
     async def send(self, data: Any, event_type: str):
-        await self.websocket.send_json({
-            "event_type": event_type,
-            "data": data
-        })
+        event = WsEvent(event_type, data)
     
     # async def receive_text(self) -> str:
     #     """Recibe texto del cliente"""
@@ -65,7 +62,7 @@ class WsConnection:
 class WsManager:
 
     def __init__(self):
-        self.active_connections: Dict[str, WsConnection] = {}
+        self.active_connections: Dict[str, set[WsConnection]] = {}
         self.rooms: Dict[str, Set[str]] = {}  # room_name -> set of client_ids
         self.event_handlers: Dict[str, List[Callable]] = {}
         self.connection_handlers: List[Callable] = []
@@ -93,21 +90,21 @@ class WsManager:
             raise
     
     async def disconnect(self, client_id: str):
-        """Desconecta un cliente"""
+        """Desconecta una conexion"""
         if client_id in self.active_connections:
             connection = self.active_connections[client_id]
             connection.connected = False
             
             # Remover de todas las salas
-            for room in list(connection.rooms):
-                await self.leave_room(client_id, room)
+            # for room in list(connection.rooms):
+            #     await self.leave_room(client_id, room)
             
-            del self.active_connections[client_id]
-            logger.info(f"Cliente desconectado: {client_id}")
+            # del self.active_connections[client_id]
+            # logger.info(f"Cliente desconectado: {client_id}")
             
-            # Ejecutar handlers de desconexión
-            for handler in self.disconnection_handlers:
-                await handler(client_id)
+            # # Ejecutar handlers de desconexión
+            # for handler in self.disconnection_handlers:
+            #     await handler(client_id)
 
     
     def get_connection(self, client_id: str) -> WsConnection:

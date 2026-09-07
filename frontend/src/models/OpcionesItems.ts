@@ -30,7 +30,7 @@ export const menuitems: menuItems[] = [
         {
             label: "Catalogo",
             path: "/",
-            roles: ["CLIENTE", "GUEST", "ADMIN"],
+            roles: ["CLIENTE", "GUEST"],
         },
         {
             label: "Pedidos",

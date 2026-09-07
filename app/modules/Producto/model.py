@@ -1,6 +1,9 @@
 from datetime import datetime, timezone
+from decimal import Decimal
 from typing import TYPE_CHECKING, Optional
 from sqlmodel import JSON, Column, Field, Relationship, SQLModel
+
+from app.modules.Cloudinary.model import Imagen
 
 
 if TYPE_CHECKING:
@@ -15,13 +18,14 @@ class Producto(SQLModel, table=True):
 
     #Atributos
     nombre: str
-    precio: float
+    precio: Decimal = Field(max_digits=10, decimal_places=2)
     descripcion: Optional[str] = None
 
     disponible: bool = Field(default=True)
     stock_cantidad: int = Field(default=0)
     habilitado: bool = Field(default=True)
-    imagenes_url: list[str] = Field(default=[], sa_column=Column(JSON))
+    # imagenes_url: list[str] = Field(default=[], sa_column=Column(JSON))
+    imagenes: list["Imagen"] = Relationship()
 
 
     #Audit

@@ -1,15 +1,23 @@
 from typing import List, Optional
-from sqlmodel import SQLModel
+from sqlmodel import Field, SQLModel
+from app.modules.Cloudinary.model import Imagen
+from app.modules.Cloudinary.schema import CloudinaryRead
 
 
 class CategoriaCreate(SQLModel):
     nombre: str
-    descripcion: str | None = None
+    descripcion: Optional[str] = None
     parent_id: int | None = None
-    imagen_url: str | None = None
-    habilitado: bool = True
+    cloudinary: CloudinaryRead
 
-class CategoriaSchema(CategoriaCreate):
+
+class CategoriaRead(SQLModel):
     id: int
-    imagen_url: str | None = None
-    subcategorias: list["CategoriaSchema"] = []
+    nombre: str
+    cloudinary: Imagen
+    descripcion: str 
+    habilitado: bool
+    parent_id: Optional[int] = None
+    subcategorias: list["CategoriaRead"] = Field(default_factory=list)
+
+    

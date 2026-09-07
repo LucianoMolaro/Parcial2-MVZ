@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from decimal import Decimal
 from typing import TYPE_CHECKING, List, Optional
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -14,9 +15,10 @@ class Ingrediente(SQLModel, table=True):
 
     #Atributos
     nombre: str
+    precio: Decimal = Field(max_digits=10, decimal_places=2)
     es_alergeno: bool = Field(default=False)
     es_removible: bool = Field(default=False)
-    stock_cantidad: float = Field(default=0)
+    stock_cantidad: Decimal = Field(max_digits=10, decimal_places=2)
     unidad_medida_id: int = Field(foreign_key="unidadmedida.id")
 
 

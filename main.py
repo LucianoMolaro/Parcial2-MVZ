@@ -38,7 +38,7 @@ from app.modules.DetallePedido.router import router as detalle_router
 from app.modules.UnidadMedida.router import router as unidad_medida_router
 from app.modules.Pago.router import router as pago_router
 from app.modules.Cloudinary.router import router as cloudinary_router
-from app.modules.websocket.router import router as websocket_router
+from app.modules.WebSocket.router import router as websocket_router
 # from app.modules.Admin.router import router as admin_router
 
 

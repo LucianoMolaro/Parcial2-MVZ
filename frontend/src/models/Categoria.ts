@@ -1,16 +1,19 @@
-export interface Categoria {
-  id: number;
+import { cloudinary } from "./Cloudinary";
+
+export interface CategoriaCreate {
   nombre: string;
-  descripcion: string | null;
+  descripcion: string ;
   parent_id: number | null;
-  imagen_url: string;
-  habilitado: boolean;
-  subcategorias: Categoria[];
+  cloudinary: cloudinary;  
 }
 
-export interface CategoriaFiltro{
-  id: string;
+export interface CategoriaRead {
+  id: number;
   nombre: string;
-  emoji: string;
-  padreId: string | null;
+  descripcion: string;
+  habilitado: boolean
+  cloudinary: cloudinary;
+  parent_id: number | null
+  subcategorias: CategoriaRead[]
 }
+

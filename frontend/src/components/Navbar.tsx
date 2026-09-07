@@ -26,7 +26,7 @@ export default function BarraNavegacion(){
 
   function handleLogout(){
     logout()
-    navigate("/login")
+    navigate("/")
   }
   
   return (
@@ -66,12 +66,12 @@ export default function BarraNavegacion(){
                   {item.label}
                 </NavLink>
               ))}
-              <button
+              {!!user && (<button
                 className="w-full text-left text-xl font-extrabold justify-center text-[#1E1E24] hover:text-[#E63946] transition-all duration-200 hover:translate-x-2 pt-3 border-t border-gray-100 flex items-center space-x-2 cursor-pointer focus:outline-none"
                 onClick={() => handleLogout()}
               >
                 <span>Cerrar sesión</span>
-              </button>
+              </button>)}
             </nav>
           </div>
 

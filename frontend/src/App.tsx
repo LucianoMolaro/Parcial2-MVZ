@@ -16,9 +16,10 @@ import PaginaUsuariosAdmin from "./pages/PaginaUsuariosAdmin";
 import { useAuthUser } from "./context/AuthContext";
 // import { useWebSocket } from "./context/WebSocketContext";
 // import CloudinaryUpload from "./pages/cloud";
-import PaginaPago from "./pages/mp";
-import PaginaCatalogo from "./pages/ProductosPage";
+
+import PaginaCatalogo from "./pages/PaginaCatalogo";
 import PaginaPedidosControl from "./pages/PaginaPedidosControl";
+import PaginaDetallePedidoControl from "./pages/PaginaDetallePedidoControl";
 
 
 
@@ -26,34 +27,17 @@ import PaginaPedidosControl from "./pages/PaginaPedidosControl";
 
 
 export default function App() {
-  const { user } = useAuthUser();
-  // const { connect, disconnect, joinRoom, status } = useWebSocket();
-
-  // useEffect(() => {
-  //   if (user) {
-  //     connect(`ws://localhost:8000/ws/${user.id}`, String(user.id));
-  //   } else {
-  //     disconnect();
-  //   }
-  // }, [user?.id]);
-
-  // useEffect(() => {
-  //   if (status !== "connected" || !user) return;
-  //   joinRoom(`pedido_${user.id}`);
-  //   const esAdmin = user.roles?.some(r => r.codigo === "ADMIN" || r.codigo === "PEDIDOS");
-  //   if (esAdmin) joinRoom("pedidos_admin");
-  // }, [status, user?.id]);
-
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element= { <PaginaCatalogo/> }/>
+        <Route path="/*" element= { <PaginaCatalogo/> }/>
         <Route path="/login" element= { <PaginaLogin/> }/>
         <Route path="/registro" element= { <PaginaRegistro/> }/>
         <Route path="/carrito" element= { <PrivateRoute rol={["CLIENTE"]}><PaginaCarrito/></PrivateRoute>}/>
-        <Route path="/usuarios/pedidos" element= { <PrivateRoute rol={["CLIENTE", "PEDIDOS", "ADMIN"]}><PaginaPedidos/></PrivateRoute> }/>
+        <Route path="/usuarios/pedidos" element= { <PrivateRoute rol={["CLIENTE"]}><PaginaPedidos/></PrivateRoute> }/>
         <Route path="/control/pedidos" element= { <PrivateRoute rol={["PEDIDOS", "ADMIN"]}><PaginaPedidosControl/></PrivateRoute> }/>
         <Route path="/pedidos/:id" element= { <PrivateRoute rol={["CLIENTE", "PEDIDOS"]}><PaginaDetallePedido/></PrivateRoute> }/>
+        <Route path="/control/pedidos/:id" element= { <PrivateRoute rol={["PEDIDOS", "ADMIN"]}><PaginaDetallePedidoControl/></PrivateRoute> }/>
         <Route path="/direcciones" element= {  <PrivateRoute rol={["CLIENTE"]}><PaginaDirecciones/></PrivateRoute> }/>
         <Route path="/admin/ingredientes" element= {  <PrivateRoute rol={["ADMIN", "STOCK"]}><PaginaIngredientesAdmin/></PrivateRoute>  }/>
         <Route path="/admin/categorias" element= { <PrivateRoute rol={["ADMIN"]}><PaginaCategorias/></PrivateRoute>  }/>

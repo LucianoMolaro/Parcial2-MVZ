@@ -5,12 +5,8 @@ from typing import List, Optional
 from sqlmodel import SQLModel
 
 from app.modules.DireccionEntrega.schema import DireccionRead
+from app.modules.FormaPago.model import FormaPago
 from app.modules.Producto.schema import ProductoCarrito
-
-
-class FormaPago(str, Enum):
-    EFECTIVO = "EFECTIVO"
-    MERCADO_PAGO = "MERCADOPAGO"
 
 
 class DetallePedidoRead(SQLModel):
@@ -43,7 +39,7 @@ class PedidoRead(SQLModel):
     id: int
     usuario_id: int
     forma_pago_codigo: str
-    direccion: Optional[DireccionRead] = None
+    direccion_entrega: Optional[DireccionRead] = None
     estado_codigo: str
     subtotal: Decimal
     costo_envio: Decimal

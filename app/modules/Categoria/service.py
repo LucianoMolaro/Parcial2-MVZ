@@ -1,20 +1,53 @@
-from typing import List, Optional
+from typing import Any, List, Optional
 from fastapi import HTTPException
 
 from app.core.UnitOfWork import UnitOfWork
 from app.modules.Categoria.model import Categoria
-from app.modules.Categoria.schema import CategoriaCreate, CategoriaSchema
+from app.modules.Categoria.schema import CategoriaCreate, CategoriaRead
+from app.modules.Cloudinary.model import Imagen
+from app.modules.Usuario.model import Usuario
 
 
-def get_all(uow: UnitOfWork, parent_id: Optional[int] = None) -> List[Categoria]:
-    return uow.categoria.get_by_parent(parent_id)
+def get_principales_admin(uow: UnitOfWork):
+    return uow.categoria.get_principales(Categoria.parent == None)
 
+def get_principales_catalogo(uow: UnitOfWork):        
+    return uow.categoria.get_principales(Categoria.habilitado==True, Categoria.parent == None)
+
+def get_por_padre(uow: UnitOfWork, current_user: Usuario, pid: int):
+
+    roles = [rol.codigo for rol in current_user.roles]
+    match roles:
+        case ["ADMIN"]:
+            return uow.categoria.get_por_padre(Categoria.parent_id == pid)
+        case _:
+            return uow.categoria.get_por_padre(Categoria.habilitado==True, Categoria.parent_id == pid)        
+    
 
 def get_by_id(uow: UnitOfWork, categoria_id: int) -> Categoria:
     c = uow.categoria.get_habilitada(categoria_id)
     if not c:
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
     return c
+
+
+
+def get_arbol(uow: UnitOfWork, categoria_id: id):
+    categoria_actual = uow.categoria.get_by_id(categoria_id)
+    
+    if not categoria_actual:
+        return []
+        
+    arbol_ruta = []
+    
+    while categoria_actual:
+        arbol_ruta.append(categoria_actual)
+        categoria_actual = categoria_actual.parent 
+
+    arbol_ruta.reverse()
+    return arbol_ruta
+
+
 
 
 def create(uow: UnitOfWork, data: CategoriaCreate) -> Categoria:
@@ -25,7 +58,10 @@ def create(uow: UnitOfWork, data: CategoriaCreate) -> Categoria:
             nombre=data.nombre,
             descripcion=data.descripcion,
             parent_id=data.parent_id,
-            imagen_url=data.imagen_url,
+            cloudinary=Imagen(
+                url=data.cloudinary.url,
+                public_id=data.cloudinary.public_id
+            ),
         )
         return uow.categoria.add(nueva)
 

@@ -1,21 +1,23 @@
 import { useEffect, useState } from 'react';
 import BarraNavegacion from '../components/Navbar';
-import { BsPencilSquare, BsTrash } from 'react-icons/bs';
+import { BsBan, BsPencilSquare, BsTrash } from 'react-icons/bs';
 import FormularioIngrediente from '../components/FormularioIngrediente';
-import { Ingrediente } from '../models/Ingrediente';
+import { IngredienteRead } from '../models/Ingrediente';
+import ModalNuevoIngrediente from '../components/FormularioIngrediente';
 
 export default function PaginaIngredientesAdmin() {
-  const [ingredientes, setIngredientes] = useState<Ingrediente[]>([]);
+  const [ingredientes, setIngredientes] = useState<IngredienteRead[]>([]);
   const [mostrarModal, setMostrarModal] = useState(false);
-  const [ingredienteEditar, setIngredienteEditar] = useState<Ingrediente| undefined>(undefined);
+  const [ingredienteEditar, setIngredienteEditar] = useState<IngredienteRead | null>(null);
 
   const cargarIngredientes = async () => {
     try {
-      const res = await fetch('http://localhost:8000/ingredientes/', {
+      const res = await fetch('http://localhost:8000/ingredientes/todos', {
         credentials: 'include',
       });
       if (!res.ok) throw new Error('No se pudieron obtener ingredientes');
-      const data: Ingrediente[] = await res.json();
+      const data = await res.json();
+      
       setIngredientes(data);
     } catch (err) {
       console.error(err);
@@ -28,7 +30,7 @@ export default function PaginaIngredientesAdmin() {
 
   const cerrarModal = () => {
     setMostrarModal(false);
-    setIngredienteEditar(undefined);
+    setIngredienteEditar(null);
     cargarIngredientes();
   };
 
@@ -47,7 +49,10 @@ export default function PaginaIngredientesAdmin() {
             </div>
             
             <button 
-              onClick={() => setMostrarModal(true)}
+              onClick={() => {
+                setIngredienteEditar(null)
+                setMostrarModal(true)
+              }}
               className="bg-[#1E1E24] hover:bg-[#E63946] text-white text-xs font-bold px-3 py-2 rounded-lg transition-colors cursor-pointer focus:outline-none self-start sm:self-center"
             >
               Crear ingrediente
@@ -93,7 +98,7 @@ export default function PaginaIngredientesAdmin() {
                         <span
                           className={`font-bold text-stone-700`}
                         >
-                          {ing.stock_cantidad.toFixed(2)} {ing.unidad_medida?.simbolo}
+                          {ing.stock_cantidad} {ing.unidad_medida?.simbolo}
                         </span>
                       </div>
 
@@ -126,14 +131,15 @@ export default function PaginaIngredientesAdmin() {
                     {/* Editar */}
                     <button
                       onClick={() => {
-                        setIngredienteEditar(ing);
-                        setMostrarModal(true);
+                        setIngredienteEditar(ing)
+                        setMostrarModal(true)
                       }}
                       title="Editar ingrediente"
                       className="bg-[#FFB703] hover:bg-[#1E1E24] text-[#1E1E24] hover:text-white p-1.5 rounded-lg transition-all duration-300 active:scale-95 cursor-pointer focus:outline-none flex items-center justify-center"
                     >
                       <BsPencilSquare className="h-4 w-4" />
                     </button>
+                    <ModalNuevoIngrediente isOpen={mostrarModal} onClose={cerrarModal} ingrediente={ingredienteEditar}/>
 
                     {/* Eliminar */}
                     <button
@@ -145,10 +151,10 @@ export default function PaginaIngredientesAdmin() {
                         });
                         if (res.ok) cargarIngredientes();
                       }}
-                      title="Eliminar del inventario"
+                      title="Desactivar del inventario"
                       className="bg-gray-50 hover:bg-[#E63946] border border-gray-100/70 text-gray-400 hover:text-white p-1.5 rounded-lg transition-all duration-300 active:scale-95 cursor-pointer focus:outline-none flex items-center justify-center"
                     >
-                      <BsTrash className="h-4 w-4" />
+                      <BsBan className="h-4 w-4" />
                     </button>
                   </div>
 

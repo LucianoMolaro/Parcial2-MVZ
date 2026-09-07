@@ -7,8 +7,8 @@ from app.modules.UnidadMedida.schema import UnidadMedidaSchema
 router = APIRouter(prefix="/unidades/medida", tags=["UnidadMedida"])
 
 
-@router.get("/listar", response_model=list[UnidadMedidaSchema])
-def listar_unidades(
+@router.get("/todas", response_model=list[UnidadMedidaSchema])
+def obtener_todas(
     uow: UnitOfWork = Depends(get_uow),
     _=Depends(require_role("ADMIN")),
 ):

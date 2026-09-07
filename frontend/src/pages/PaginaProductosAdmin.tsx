@@ -2,49 +2,16 @@ import React, { useEffect, useState } from 'react';
 import BarraNavegacion from '../components/Navbar';
 import { BsPencilSquare, BsSearch, BsTrash } from 'react-icons/bs';
 import FormularioProducto from '../components/FormularioProducto';
-import { Producto } from '../models/Producto';
-import { Categoria } from '../models/Categoria';
-
+import { ProductoCategoria, ProductoCreate, ProductoIngrediente } from '../models/Producto';
 
 export default function PaginaProductosAdmin() {
-  const [productos, setProductos] = useState<Producto[]>([]);
-  const [mostrarFormulario, setMostrarFormulario] = useState(false);
-  const [productoEditar, setProductoEditar] = useState<Producto | undefined>(undefined);
-  const [busqueda, setBusqueda] = useState('');
-  const [filtroDisponible, setFiltroDisponible] = useState('');
-  const [filtroStock, setFiltroStock] = useState('');
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
 
-  const cargarProductos = async () => {
-    const res = await fetch('http://localhost:8000/productos/', { credentials: 'include' });
-    if (res.ok) setProductos(await res.json());
-  };
+  const [productoEditar, setProductoEditar] = useState<ProductoCreate | null>(null)
+  const [mostrarFormulario, setMostrarFormulario] = useState(false)
+  const cerrarFormulario = ()=>{
+    setMostrarFormulario(false)
+  }
 
-  useEffect(() => { cargarProductos(); }, []);
-
-
-  const cerrarFormulario = () => {
-    setMostrarFormulario(false);
-    setProductoEditar(undefined);
-    cargarProductos();
-  };
-
-  const eliminar = async (prod: Producto) => {
-    if (!confirm(`¿Eliminar "${prod.nombre}"?`)) return;
-    const res = await fetch(`http://localhost:8000/productos/${prod.id}`, { method: 'DELETE', credentials: 'include' });
-    if (res.ok) cargarProductos();
-  };
-
-
-
-  const productosFiltrados = productos.filter(p => {
-    if (busqueda && !p.nombre.toLowerCase().includes(busqueda.toLowerCase())) return false;
-    if (filtroDisponible === 'si' && !p.disponible) return false;
-    if (filtroDisponible === 'no' && p.disponible) return false;
-    if (filtroStock === 'con' && p.stock_cantidad === 0) return false;
-    if (filtroStock === 'sin' && p.stock_cantidad > 0) return false;
-    return true;
-  });
 
   return (
     <>
@@ -55,10 +22,10 @@ export default function PaginaProductosAdmin() {
           {/* ENCABEZADO */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-xl font-extrabold text-red-500 tracking-tight">Productos (Admin)</h1>
+              <h1 className="text-xl font-extrabold text-red-500 tracking-tight">Productos</h1>
             </div>
             <button
-              onClick={() => { setProductoEditar(undefined); setMostrarFormulario(true); }}
+              onClick={() => { setProductoEditar(null); setMostrarFormulario(true); }}
               className="bg-[#1E1E24] hover:bg-[#E63946] text-white text-xs font-bold px-3 py-2 rounded-lg transition-colors cursor-pointer focus:outline-none self-start sm:self-center"
             >
               Crear producto
@@ -102,7 +69,7 @@ export default function PaginaProductosAdmin() {
           </div> */}
 
           {/* LISTA */}
-          <div className="space-y-2.5">
+          {/* <div className="space-y-2.5">
             {productosFiltrados.map((prod) => (
               <div
                 key={prod.id}
@@ -166,7 +133,7 @@ export default function PaginaProductosAdmin() {
                 No hay productos que coincidan con los filtros.
               </div>
             )}
-          </div>
+          </div> */}
         </div>
       </div>
     </>

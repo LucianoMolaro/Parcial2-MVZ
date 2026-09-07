@@ -8,13 +8,13 @@ import { CarritoProvider } from "./context/CarritoContext";
 
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
-    <WebSocketProvider>
-        <AuthProvider>
+    <AuthProvider>
+        <WebSocketProvider>
             <CarritoProvider>
                 <FiltrosProvider>
                     <App />
                 </FiltrosProvider>
             </CarritoProvider>
-        </AuthProvider>
-    </WebSocketProvider>
+        </WebSocketProvider>
+    </AuthProvider>
 );

@@ -1,6 +1,9 @@
 from sqlmodel import SQLModel
 
+class CloudinaryRead(SQLModel):
+    url: str
+    public_id: str
+
 class UploadRead(SQLModel):
-    ok: bool = True
     url: str
     public_id: str
