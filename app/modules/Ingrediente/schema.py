@@ -20,8 +20,6 @@ class IngredienteUpdate(SQLModel):
     es_alergeno: bool
     stock_cantidad: float
 
-
-
 class IngredienteSchema(SQLModel):
     id: int
     nombre: str

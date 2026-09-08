@@ -5,5 +5,5 @@ export interface cloudinary{
 
 export interface ImagenProducto{
     file?: File
-    cloudinary?: cloudinary[]
+    cloudinary?: cloudinary
 }

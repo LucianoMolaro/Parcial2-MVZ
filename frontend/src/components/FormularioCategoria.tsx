@@ -18,6 +18,7 @@ export default function FormularioCategoria({ isOpen, onClose, categoriaEditar, 
     nombre: "",
     descripcion: "", 
     parent_id: null as number | null,
+
   })
   const [categoriasOption, setCategoriasOption] = useState<CategoriaRead[]>([])
   const [original, setOriginal] = useState<CategoriaRead | null>(null)
@@ -34,7 +35,7 @@ export default function FormularioCategoria({ isOpen, onClose, categoriaEditar, 
 
     setHistorialCategoria(ruta)
     setCategorias(categorias)
-    if(ruta.length>0){setCategoriasOption(ruta)}else{setCategoriasOption(categorias)}
+    if(ruta.length>0){setCategoriasOption(ruta[ruta.length - 1].subcategorias)}else{setCategoriasOption(categorias)}
 
     if(!!categoriaEditar){
       setOriginal(categoriaEditar)
@@ -207,84 +208,94 @@ const manejarEnvio = async (e: React.FormEvent) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
 
       {/* CAPA DE DESENFOQUE OSCURA (Backdrop) */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-xs" />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-xs" onClick={onClose} />
 
-      {/* CONTENEDOR VENTANA MODAL (Sutil y compacta) */}
-      <div className="relative w-full max-w-screen-sm bg-white rounded-2xl border border-gray-100 shadow-xl p-5 space-y-4 z-10 max-h-[90vh] overflow-y-auto scrollbar-hide">
+      {/* CONTENEDOR VENTANA MODAL */}
+      <div className="relative z-10 w-full max-w-screen-sm space-y-4 overflow-y-auto scrollbar-hide rounded-2xl border border-gray-100 bg-white p-5 shadow-xl max-h-[90vh] font-sans antialiased">
 
-        {/* Encabezado del modal */}
-        <div className="flex items-start justify-between">
-          <div className="space-y-0.5">
-            <h2 className="text-base font-black text-[#1E1E24] tracking-tight ">
-              {categoriaEditar ? 'Editar' : 'Nueva'} <span className="text-[#E63946]">Categoría</span>
-            </h2>
-          </div>
-          <button type="button" onClick={onClose} className="text-gray-400 hover:text-[#E63946] font-black text-sm p-1 cursor-pointer"><BsXLg></BsXLg></button>
+        {/* Encabezado */}
+        <div className="flex items-start justify-between border-b border-gray-50 pb-2">
+          <h2 className="text-base font-black tracking-tight text-[#1E1E24]">
+            {categoriaEditar ? "Editar" : "Nueva"} <span className="text-[#E63946]">Categoría</span>
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar"
+            className="cursor-pointer p-1 text-sm font-black text-gray-400 transition-colors hover:text-[#E63946]"
+          >
+            <BsXLg />
+          </button>
         </div>
 
         <form onSubmit={manejarEnvio} className="space-y-3.5">
+
           {/* Nombre */}
           <div className="space-y-1">
-            <label htmlFor="nombre" className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Nombre de categoria</label>
+            <label htmlFor="nombre" className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">
+              Nombre de categoria
+            </label>
             <input
               id="nombre"
               type="text"
               required
               value={formulario.nombre}
-              onChange={(e) => setFormulario({...formulario, nombre: e.target.value})}
-              className="w-full px-2.5 py-1.5 text-xs bg-[#FAFAFA] border border-gray-100 rounded-xl text-[#1E1E24] placeholder-gray-400 focus:outline-none focus:border-[#FFB703] transition-colors font-medium"
+              onChange={(e) => setFormulario({ ...formulario, nombre: e.target.value })}
+              className="w-full rounded-xl border border-gray-100 bg-[#FAFAFA] px-2.5 py-1.5 text-xs font-medium text-[#1E1E24] placeholder-gray-400 transition-colors focus:outline-none focus:border-[#FFB703]"
             />
           </div>
 
           {/* Descripción */}
           <div className="space-y-1">
-            <label htmlFor="descripcion" className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Descripción</label>
+            <label htmlFor="descripcion" className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">
+              Descripción
+            </label>
             <textarea
               id="descripcion"
               rows={2}
               value={formulario.descripcion}
-              onChange={(e) => setFormulario({...formulario, descripcion: e.target.value})}
-              className="w-full px-2.5 py-1.5 text-xs bg-[#FAFAFA] border border-gray-100 rounded-xl text-[#1E1E24] placeholder-gray-400 focus:outline-none focus:border-[#FFB703] transition-colors font-medium resize-none leading-normal"
+              onChange={(e) => setFormulario({ ...formulario, descripcion: e.target.value })}
+              className="w-full resize-none rounded-xl border border-gray-100 bg-[#FAFAFA] px-2.5 py-1.5 text-xs font-medium leading-normal text-[#1E1E24] placeholder-gray-400 transition-colors focus:outline-none focus:border-[#FFB703]"
             />
           </div>
-          
 
-          {/* Ruta */} {/* Renderizado dinámico de los Selects en cascada */}
-          <div className="relative space-y-1 bg-white border border-gray-100 p-2 rounded-xl shadow-xs">
-            <label htmlFor="descripcion" className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+          {/* Ruta / Categorías en cascada */}
+          <div className="relative space-y-2 rounded-xl border border-gray-100 bg-[#FAFAFA] p-2.5 shadow-xs">
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">
               Categorias mayores
             </label>
 
             <button
               type="button"
-              title='Eliminar categorias'
-              className={`absolute top-1 right-2 p-1 rounded-md hover:bg-red-500 hover:text-white transition-all duration-200 ${
-                !hayHistorial ? 'hidden' : ''
+              title="Eliminar categorias"
+              className={`absolute right-2 top-2 rounded-md p-1 text-gray-400 transition-all duration-200 hover:bg-[#E63946] hover:text-white ${
+                !hayHistorial ? "hidden" : ""
               }`}
               onClick={() => eliminarHistorial()}
             >
-              <BsXLg className="w-4 h-4"/>
+              <BsXLg className="h-3.5 w-3.5" />
             </button>
 
             <div
-              className={`flex flex-wrap items-center gap-x-1.5 text-[18px] font-semibold 
-                ${!hayHistorial ? 'hidden' : ''}
-              `}
+              className={`flex flex-wrap items-center gap-x-1.5 ${!hayHistorial ? "hidden" : ""}`}
             >
               {historialCategoria.map((cat, index) => (
                 <Fragment key={cat.id}>
                   <button
-                    className="text-gray-700 border-none bg-none text-[14px] hover:text-red-400 transition-all duration-300 ease-in-out"
+                    type="button"
+                    className="border-none bg-none text-xs font-semibold text-gray-500 transition-all duration-300 ease-in-out hover:text-[#E63946]"
                     onClick={() => navegarAHistorial(index)}
                   >
                     {cat.nombre}
                   </button>
 
-                  <BsChevronRight className="text-gray-600 w-4 h-4" />
+                  <BsChevronRight className="h-3 w-3 text-gray-300" />
 
-                  <span className="text-red-400 border-none bg-none text-[18px] transition-all duration-300 ease-in-out">
-                    {formulario.nombre}
-                  </span>
+                  {index === historialCategoria.length - 1 && (
+                    <span className="border-none bg-none text-xs font-semibold text-[#E63946] transition-all duration-300 ease-in-out">
+                      {formulario.nombre}
+                    </span>
+                  )}
                 </Fragment>
               ))}
             </div>
@@ -294,6 +305,7 @@ const manejarEnvio = async (e: React.FormEvent) => {
               value={formulario.parent_id ?? ""}
               onChange={(e) => agregarCategoria(Number(e.target.value))}
               disabled={categoriasOption.length == 0}
+              className="w-full cursor-pointer rounded-xl border border-gray-100 bg-white px-2 py-1.5 text-xs font-medium text-[#1E1E24] focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
             >
               <option value="">Subcategoria de...</option>
               {categoriasOption.map((categoria) => (
@@ -304,33 +316,36 @@ const manejarEnvio = async (e: React.FormEvent) => {
             </select>
           </div>
 
-
-          {/* Subida de Imagen Sutil */}
+          {/* Imagen */}
           <div className="space-y-1">
-            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Imagen</label>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">
+              Imagen
+            </label>
             <div className="flex items-center space-x-2">
-              <div className="w-10 h-10 rounded-xl bg-[#FAFAFA] border border-gray-100 border-dashed flex items-center justify-center overflow-hidden">
-                {!!imagen && <img src={URL.createObjectURL(imagen)} alt="Preview" className="w-full h-full object-cover" />}
+              <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-dashed border-gray-100 bg-[#FAFAFA]">
+                {!!imagen && (
+                  <img src={URL.createObjectURL(imagen)} alt="Preview" className="h-full w-full object-cover" />
+                )}
               </div>
-              <label className="bg-white border border-gray-200 hover:border-[#FFB703] text-gray-500 font-bold text-[11px] py-1.5 px-3 rounded-xl transition-all cursor-pointer shadow-xs active:scale-98">
+              <label className="cursor-pointer rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-[11px] font-bold text-gray-500 shadow-xs transition-all hover:border-[#FFB703] active:scale-98">
                 <span>Cargar Imagen</span>
                 <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
               </label>
             </div>
           </div>
 
-          {/* Botones de Acción de la Base */}
-          <div className="pt-2 flex items-center space-x-2">
+          {/* Botones de Acción */}
+          <div className="flex items-center space-x-2 pt-2">
             <button
               type="button"
               onClick={onClose}
-                className="w-1/3 bg-gray-50 hover:bg-gray-100 text-[#1E1E24] border border-gray-100 font-bold text-xs py-2 rounded-xl transition-all cursor-pointer text-center"
+              className="w-1/3 cursor-pointer rounded-xl border border-gray-100 bg-gray-50 py-2 text-center text-xs font-bold text-[#1E1E24] transition-all hover:bg-gray-100"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="w-2/3 bg-[#E63946] hover:bg-opacity-95 text-white font-extrabold text-xs py-2 rounded-xl tracking-wider uppercase transition-all shadow-xs active:scale-98 focus:outline-none cursor-pointer text-center"
+              className="w-2/3 cursor-pointer rounded-xl bg-[#E63946] py-2 text-center text-xs font-extrabold uppercase tracking-wider text-white shadow-xs transition-all hover:bg-opacity-95 focus:outline-none active:scale-98"
             >
               Guardar
             </button>

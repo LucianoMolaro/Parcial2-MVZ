@@ -49,7 +49,6 @@ UNIDAD_MEDIDA = [
     UnidadMedida(nombre="Docena", simbolo="doc", tipo="Unidad"),
 ]
 
-
 def seed():
     with Session(engine) as session:
         for rol in ROLES:

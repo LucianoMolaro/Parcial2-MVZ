@@ -1,9 +1,10 @@
 import { useState, useEffect, Fragment } from "react";
-import { BsChevronRight, BsCircleFill, BsPlus, BsXLg } from "react-icons/bs";
+import { BsChevronRight, BsCircleFill, BsPlus, BsPlusLg, BsXLg } from "react-icons/bs";
 import { cloudinary, ImagenProducto } from "../models/Cloudinary";
 import { ProductoCreate, ProductoIngredienteCreate, ProductoCategoriaCreate } from "../models/Producto";
 import { CategoriaRead } from "../models/Categoria";
 import { IngredienteRead } from "../models/Ingrediente";
+import { UnidadMedidaRead } from "../models/UnidadMedida";
 
 
 
@@ -22,10 +23,11 @@ export default function ModalNuevoProducto({ isOpen, onClose, productoEditar }: 
   const [formularioProdIngr, setFormularioProdIngr] = useState({
     ingrediente_id: null as number | null,
     cantidad: null as number | null,
-    es_removible: false
+    es_removible: false,
+    unidad_medida_id: null as number | null 
   })
-  const [formularioProdCat, setFormularioProdCat] = useState<number[]>([])
 
+  const [formularioProdCat, setFormularioProdCat] = useState<number[]>([])
   const [archivosImg, setArchivosImg] = useState<ImagenProducto[]>([])
 
   const [productoIngrediente, setProdIngr] = useState<ProductoIngredienteCreate[]>([])
@@ -37,28 +39,63 @@ export default function ModalNuevoProducto({ isOpen, onClose, productoEditar }: 
   const [historialNav, setHistorial] = useState<CategoriaRead[]>([])
   const [categoriaPrincipal, setCategoriaPrincipal] = useState<number | null>(null)
   const [ingredientes, setIngredientes] = useState<IngredienteRead[]>([])
+  const [unidadesMedidaSelect, setUnidadesMedidaSelect] = useState<UnidadMedidaRead[]>([])
   const [previews, setPreviews] = useState<string[]>([]);
   const [mostrarImagenes, setMostrarImagenes] = useState(false);
 
   useEffect(() => {
-    const urls = archivosImg.map(img => URL.createObjectURL(img));
+    const urls = archivosImg.map(img => {
+      if (img.file) {
+        return URL.createObjectURL(img.file);
+      }
+
+      if (img.cloudinary) {
+        return img.cloudinary.url;
+      }
+
+      return "";
+    });
 
     setPreviews(urls);
 
     return () => {
-      urls.forEach(url => URL.revokeObjectURL(url));
+      urls.forEach(url => {
+        if (url.startsWith("blob:")) {
+          URL.revokeObjectURL(url);
+        }
+      });
     };
   }, [archivosImg]);
 
   useEffect(()=>{
     if(categorias.length==0) cargarCategorias()
     if(ingredientes.length==0) cargarIngredientes() 
-    if(productoEditar){
-      let imagen: ImagenProducto = {cloudinary: productoEditar.imagenes}
-      setArchivosImg(prev => [...prev, imagen])
+    if (productoEditar) {
+      const imagenesExistentes: ImagenProducto[] =
+        productoEditar.imagenes.map(p => ({
+          cloudinary: p
+        }));
+
+      setArchivosImg(imagenesExistentes);
     }
 
   }, [])
+
+  
+  useEffect(()=>{
+    if(formularioProdIngr.ingrediente_id == null) return
+    let ingr = ingredientes.find(i => i.id == formularioProdIngr.ingrediente_id)
+    if(!ingr) return
+    cargarUnidadesPorTipo(ingr.unidad_medida.tipo)
+
+  }, [formularioProdIngr])
+
+  const cargarUnidadesPorTipo = async (tipo: string) => {
+    const res = await fetch(`http://localhost:8000/unidades/medida/xtipo/${tipo}`, {method: "GET", credentials: "include"})
+    if(!res.ok) return
+    const data = await res.json()
+    setUnidadesMedidaSelect(data)
+  }
 
   // useEffect(() => {
   //   console.log("categorias:", categorias);
@@ -93,20 +130,16 @@ export default function ModalNuevoProducto({ isOpen, onClose, productoEditar }: 
   }
 
   const agregarIngr = () => {
-    if(!!formularioProdIngr.cantidad && formularioProdIngr.ingrediente_id){
+    if(formularioProdIngr.cantidad !=null && formularioProdIngr.ingrediente_id !=null && formularioProdIngr.unidad_medida_id !=null){
       let prodIngr: ProductoIngredienteCreate = {
         ingrediente_id: formularioProdIngr.ingrediente_id,
         cantidad: formularioProdIngr.cantidad,
-        es_removible: formularioProdIngr.es_removible
+        es_removible: formularioProdIngr.es_removible,
+        unidad_medida_id: formularioProdIngr.unidad_medida_id
       }
       setProdIngr(prev => [...prev, prodIngr])
     }  
   }
-
-  useEffect(()=>{
-    agregarIngr()
-    console.log(formularioProdIngr)
-  }, [formularioProdIngr])
 
   const cargarCategorias = async () => {
     const res = await fetch('http://localhost:8000/categorias/admin', { credentials: 'include' });
@@ -140,159 +173,271 @@ export default function ModalNuevoProducto({ isOpen, onClose, productoEditar }: 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Capa de desenfoque de fondo */}
+      {/* Fondo con blur */}
       <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-xs z-0"
+        className="absolute inset-0 z-0 bg-black/40 backdrop-blur-xs"
         onClick={onClose}
       />
 
-      {/* Ventana Modal (Configurada con scroll vertical interno sutil) */}
-      <div className="relative w-full max-w-md bg-white rounded-2xl border border-gray-100 shadow-xl p-5 space-y-4 z-10 max-h-[90vh] overflow-y-auto scrollbar-hide font-sans antialiased">
+      {/* Modal */}
+      <div className="relative z-10 w-full max-w-md space-y-4 overflow-y-auto scrollbar-hide rounded-2xl border border-gray-100 bg-white p-5 font-sans antialiased shadow-xl max-h-[90vh]">
 
         {/* Cabecera */}
         <div className="flex items-start justify-between border-b border-gray-50 pb-2">
-          <div>
-            <h2 className="text-base font-black text-[#1E1E24] tracking-tight">
-              {productoEditar ? 'Editar' : 'Nuevo'} <span className="text-[#E63946]">Producto</span>
-            </h2>
-          </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-[#E63946] font-black text-sm p-1 cursor-pointer"><BsXLg></BsXLg></button>
+          <h2 className="text-base font-black tracking-tight text-[#1E1E24]">
+            {productoEditar ? "Editar" : "Nuevo"} <span className="text-[#E63946]">Producto</span>
+          </h2>
+          <button
+            onClick={onClose}
+            aria-label="Cerrar"
+            className="cursor-pointer p-1 text-sm font-black text-gray-400 transition-colors hover:text-[#E63946]"
+          >
+            <BsXLg />
+          </button>
         </div>
 
         <form className="space-y-3.5" onSubmit={handleSubmit}>
 
-          {/* Fila Doble: Nombre y Precio */}
+          {/* Nombre y Precio */}
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-2 space-y-1">
-              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Nombre</label>
-              <input type="text" required value={formularioProducto.nombre} onChange={e => setFormularioProducto({...formularioProducto, nombre: e.target.value})} className="w-full px-2.5 py-1.5 text-xs bg-[#FAFAFA] border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none focus:border-[#FFB703] font-medium" />
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                Nombre
+              </label>
+              <input
+                type="text"
+                required
+                value={formularioProducto.nombre}
+                onChange={(e) => setFormularioProducto({ ...formularioProducto, nombre: e.target.value })}
+                className="w-full rounded-xl border border-gray-100 bg-[#FAFAFA] px-2.5 py-1.5 text-xs font-medium text-[#1E1E24] focus:outline-none focus:border-[#FFB703]"
+              />
             </div>
             <div className="space-y-1">
-              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Precio ($)</label>
-              <input type="number" step="0.1" required value={formularioProducto.precio} onChange={e=>setFormularioProducto({...formularioProducto, precio: Number(e.target.value)})} className="w-full px-2.5 py-1.5 text-xs bg-[#FAFAFA] border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none focus:border-[#FFB703] font-medium" />
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                Precio ($)
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                required
+                value={formularioProducto.precio}
+                onChange={(e) => setFormularioProducto({ ...formularioProducto, precio: Number(e.target.value) })}
+                className="w-full rounded-xl border border-gray-100 bg-[#FAFAFA] px-2.5 py-1.5 text-xs font-medium text-[#1E1E24] focus:outline-none focus:border-[#FFB703]"
+              />
             </div>
           </div>
 
           {/* Descripción */}
           <div className="space-y-1">
-            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Descripción</label>
-            <textarea rows={2} value={formularioProducto.descripcion} onChange={(e) => setFormularioProducto({...formularioProducto, descripcion: e.target.value})} className="w-full px-2.5 py-1.5 text-xs bg-[#FAFAFA] border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none focus:border-[#FFB703] font-medium resize-none" />
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">
+              Descripción
+            </label>
+            <textarea
+              rows={2}
+              value={formularioProducto.descripcion}
+              onChange={(e) => setFormularioProducto({ ...formularioProducto, descripcion: e.target.value })}
+              className="w-full resize-none rounded-xl border border-gray-100 bg-[#FAFAFA] px-2.5 py-1.5 text-xs font-medium text-[#1E1E24] focus:outline-none focus:border-[#FFB703]"
+            />
           </div>
 
-          {/* ========================================================================= */}
-          {/* RELACIÓN 1: PRODUCTO - CATEGORÍA (Muchos a Muchos, recursivo) */}
-          {/* ========================================================================= */}
-          <div className="space-y-2 bg-[#FAFAFA] p-2.5 rounded-xl border border-gray-100/40">
-            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+          {/* ================= RELACIÓN: PRODUCTO - CATEGORÍA ================= */}
+          <div className="space-y-2 rounded-xl border border-gray-100/40 bg-[#FAFAFA] p-2.5">
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">
               Enlazar Categorías
             </label>
 
             {historialNav && (
-              <div className="flex gap-1 items-center">
-                {historialNav.map(c => (
+              <div className="flex items-center gap-1 flex-wrap">
+                {historialNav.map((c) => (
                   <Fragment key={c.id}>
-                    <div className="flex items-center">
+                    <label className="flex items-center gap-1 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={categoriaPrincipal === c.id}
                         onChange={() =>
-                          setCategoriaPrincipal(
-                            categoriaPrincipal === c.id ? null : c.id
-                          )
+                          setCategoriaPrincipal(categoriaPrincipal === c.id ? null : c.id)
                         }
+                        className="accent-[#FFB703]"
                       />
-                      <span className="text-xs">{c.nombre}</span>
-                    </div>
-                    <BsChevronRight />
+                      <span className="text-xs font-medium text-[#1E1E24]">{c.nombre}</span>
+                    </label>
+                    <BsChevronRight className="text-gray-300" />
                   </Fragment>
                 ))}
               </div>
             )}
 
-            <div className="flex gap-2">
-              <select
-                onChange={(e) => {agregarCat(Number(e.target.value)), agregarAHistorial(Number(e.target.value))}}
-                className="flex-grow px-2 py-1.5 text-xs bg-white border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none font-medium cursor-pointer"
-              >
-                <option value="">Selecciona una categoría...</option>
-                {categoriasOption.map(c => (
-                  <option key={c.id} value={c.id} className="rounded-md">{c.nombre}</option>
-                ))}
-                       
-              </select> 
+            <select
+              onChange={(e) => {
+                agregarCat(Number(e.target.value));
+                agregarAHistorial(Number(e.target.value));
+              }}
+              className="w-full cursor-pointer rounded-xl border border-gray-100 bg-white px-2 py-1.5 text-xs font-medium text-[#1E1E24] focus:outline-none"
+            >
+              <option value="">Selecciona una categoría...</option>
+              {categoriasOption.map((c) => (
+                <option key={c.id} value={c.id}>{c.nombre}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* ================= INGREDIENTES ================= */}
+          <div className="space-y-2 rounded-xl border border-gray-100/40 bg-[#FAFAFA] p-2.5">
+            <div className="flex items-center justify-between">
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                Ingredientes
+              </label>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={esfinal}
+                    onClick={() => setEsfinal(!esfinal)}
+                    className={`relative h-5 w-9 rounded-full transition-colors duration-200 ease-in-out
+                      ${esfinal ? "bg-[#FFB703]" : "bg-gray-200"}
+                    `}
+                  >
+                    <span
+                      className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform duration-200 ease-in-out
+                        ${esfinal ? "translate-x-4" : "translate-x-0"}
+                      `}
+                    />
+                  </button>
+            </div>
+
+            <div className={`${esfinal ? "hidden" : "flex"} flex-col gap-2`}>
+              {/* Fila: Ingrediente + Cantidad + Unidad */}
+              <div className="flex gap-2">
+                <select
+                  onChange={(e) => setFormularioProdIngr({ ...formularioProdIngr, ingrediente_id: Number(e.target.value) })}
+                  className="flex-grow cursor-pointer rounded-xl border border-gray-100 bg-white px-2 py-1.5 text-xs font-medium text-[#1E1E24] focus:outline-none"
+                >
+                  <option value="">Selecciona un ingrediente...</option>
+                  {ingredientes.map((c) => (
+                    <option key={c.id} value={c.id}>{c.nombre}</option>
+                  ))}
+                </select>
+
+                <input
+                  type="number"
+                  step="0.1"
+                  placeholder="Cantidad"
+                  onChange={(e) => setFormularioProdIngr({ ...formularioProdIngr, cantidad: Number(e.target.value) })}
+                  className="w-16 rounded-xl border border-gray-100 bg-white px-2 py-1.5 text-xs font-medium text-[#1E1E24] focus:outline-none"
+                />
+
+                <select
+                  onChange={(e) => setFormularioProdIngr({ ...formularioProdIngr, unidad_medida_id: Number(e.target.value) })}
+                  className="w-20 cursor-pointer rounded-xl border border-gray-100 bg-white px-2 py-1.5 text-xs font-medium text-[#1E1E24] focus:outline-none"
+                  disabled={unidadesMedidaSelect.length==0}
+                >
+                  <option
+                    value=""
+                    className={formularioProdIngr.ingrediente_id !== null ? "hidden" : ""}
+                  >
+                    tipo...
+                  </option>
+                  {unidadesMedidaSelect.map(u => (
+                    <option value={u.id} key={u.id}>{u.simbolo}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Switch: Removible + Botón agregar */}
+              <div className="flex items-center justify-between px-0.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                  Removible
+                </span>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={formularioProdIngr.es_removible}
+                    onClick={() => setFormularioProdIngr({ ...formularioProdIngr, es_removible: !formularioProdIngr.es_removible })}
+                    className={`relative h-5 w-9 rounded-full transition-colors duration-200 ease-in-out
+                      ${formularioProdIngr.es_removible ? "bg-[#FFB703]" : "bg-gray-200"}
+                    `}
+                  >
+                    <span
+                      className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform duration-200 ease-in-out
+                        ${formularioProdIngr.es_removible ? "translate-x-4" : "translate-x-0"}
+                      `}
+                    />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => agregarIngr()}
+                    aria-label="Agregar ingrediente"
+                    className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1E1E24] text-white transition-transform active:scale-90"
+                  >
+                    <BsPlusLg className="text-[10px]" />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
-          
-
-          <div className={"space-y-2 bg-[#FAFAFA] p-2.5 rounded-xl border border-gray-100/40 "} >
-            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-              Ingredientes
-            </label>
-              <button
-                type="button"
-                onClick={(e) => {setEsfinal(!esfinal)}}
-              >
-                <BsCircleFill></BsCircleFill>  
-              </button> 
-
-            <div className={esfinal ? "hidden" : "block" + " flex gap-2"}>
-
-              <select
-                onChange={(e) => {setFormularioProdIngr({...formularioProdIngr, ingrediente_id: Number(e.target.value)})}}
-                className="flex-grow px-2 py-1.5 text-xs bg-white border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none font-medium cursor-pointer"
-              >
-                <option value="">Selecciona una categoría...</option>
-                {ingredientes.map(c => (
-                  <option key={c.id} value={c.id} className="rounded-md">{c.nombre}</option>
-                ))}
-                       
-              </select>
-              <input 
-                type="number"
-                step="0.1" 
-                onChange={(e) => {setFormularioProdIngr({...formularioProdIngr, cantidad: Number(e.target.value)})}} 
-              />
-
-              <button
-                type="button"
-                onClick={() => setFormularioProdIngr({...formularioProdIngr, es_removible: (!formularioProdIngr.es_removible)})}
-              >
-                <BsCircleFill></BsCircleFill>  
-              </button> 
-            </div>
-          </div>
-
+          {/* ================= IMAGEN ================= */}
           <div className="space-y-1">
-            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Imagen</label>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">
+              Imagen
+            </label>
             <div className="flex items-center space-x-2">
-              <div className="relative w-10 h-10 rounded-xl bg-[#FAFAFA] border border-gray-100 border-dashed flex items-center justify-center overflow-hidden">
-                {previews.length > 0 && (
-                  <>
-                    {previews.slice(0, 3).map((src, index) => (
-                      <img
-                        key={src}
-                        src={src}
-                        alt={`Preview ${index + 1}`}
-                        className={`absolute w-7 h-7 rounded-lg object-cover border-2 border-white shadow-sm ${
-                          index === 0
-                            ? "-translate-x-1 -translate-y-1"
-                            : index === 1
-                            ? "translate-x-1"
-                            : "translate-y-1"
-                        }`}
-                      />
-                    ))}
+              <div className="relative">
+                {/* Preview acumulada */}
+                <button
+                  type="button"
+                  onClick={() => setMostrarImagenes((prev) => !prev)}
+                  className="relative h-10 w-10 overflow-hidden rounded-xl border border-dashed border-gray-100 bg-[#FAFAFA]"
+                >
+                  {previews.slice(0, 3).map((src, index) => (
+                    <img
+                      key={src}
+                      src={src}
+                      className={`absolute h-7 w-7 rounded-lg border-2 border-white object-cover
+                        ${index === 0 ? "-translate-x-1 -translate-y-1" : ""}
+                        ${index === 1 ? "translate-x-1" : ""}
+                        ${index === 2 ? "translate-y-1" : ""}
+                      `}
+                    />
+                  ))}
 
-                    {previews.length > 3 && (
-                      <span className="absolute bottom-0 right-0 z-10 bg-black/70 text-white text-[9px] font-medium rounded-md px-1">
-                        +{previews.length - 3}
-                      </span>
-                    )}
-                  </>
+                  {previews.length > 3 && (
+                    <span className="absolute bottom-0 right-0 z-10 rounded-md bg-black/70 px-1 text-[9px] text-white">
+                      +{previews.length - 3}
+                    </span>
+                  )}
+                </button>
+
+                {/* Lista para eliminar */}
+                {mostrarImagenes && (
+                  <div className="absolute left-0 top-12 z-50 w-64 rounded-xl border border-gray-100 bg-white p-2 shadow-lg">
+                    <div className="grid grid-cols-3 gap-2">
+                      {archivosImg.map((imagen, index) => (
+                        <div key={index} className="relative">
+                          <img
+                            src={obtenerImagen(imagen)}
+                            className="h-16 w-16 rounded-lg object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setArchivosImg((prev) => prev.filter((_, i) => i !== index))
+                            }
+                            aria-label="Eliminar imagen"
+                            className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#E63946] text-xs text-white"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
-              <label className="bg-white border border-gray-200 hover:border-[#FFB703] text-gray-500 font-bold text-[11px] py-1.5 px-3 rounded-xl transition-all cursor-pointer shadow-xs active:scale-98">
+
+              <label className="cursor-pointer rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-[11px] font-bold text-gray-500 shadow-xs transition-all hover:border-[#FFB703] active:scale-98">
                 <span>Cargar Imagen</span>
                 <input
                   type="file"
@@ -301,75 +446,15 @@ export default function ModalNuevoProducto({ isOpen, onClose, productoEditar }: 
                   className="hidden"
                   onChange={(e) => {
                     const files = e.target.files;
-
                     if (!files) return;
 
-                    setArchivosImg(prev => [
-                      ...prev,
-                      ...Array.from(files)
-                    ]);
+                    const nuevasImagenes: ImagenProducto[] = Array.from(files).map((file) => ({ file }));
+                    setArchivosImg((prev) => [...prev, ...nuevasImagenes]);
                   }}
                 />
               </label>
             </div>
           </div>
-          <div className="relative">
-
-          {/* Preview acumulada */}
-          <button
-            type="button"
-            onClick={() => setMostrarImagenes(prev => !prev)}
-            className="relative w-10 h-10 rounded-xl bg-[#FAFAFA] border border-gray-100 border-dashed overflow-hidden"
-          >
-            {previews.slice(0, 3).map((src, index) => (
-              <img
-                key={src}
-                src={src}
-                className={`absolute w-7 h-7 rounded-lg object-cover border-2 border-white
-                  ${index === 0 ? "-translate-x-1 -translate-y-1" : ""}
-                  ${index === 1 ? "translate-x-1" : ""}
-                  ${index === 2 ? "translate-y-1" : ""}
-                `}
-              />
-            ))}
-
-            {previews.length > 3 && (
-              <span className="absolute bottom-0 right-0 z-10 bg-black/70 text-white text-[9px] rounded-md px-1">
-                +{previews.length - 3}
-              </span>
-            )}
-          </button>
-
-          {/* Lista para eliminar */}
-          {mostrarImagenes && (
-            <div className="absolute top-12 left-0 z-50 w-64 p-2 bg-white border rounded-xl shadow-lg">
-              <div className="grid grid-cols-3 gap-2">
-                {archivosImg.map((imagen, index) => (
-                  <div key={index} className="relative">
-                    <img
-                      src={obtenerPreview(imagen)}
-                      className="w-16 h-16 rounded-lg object-cover"
-                    />
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setArchivosImg(prev =>
-                          prev.filter((_, i) => i !== index)
-                        );
-                      }}
-                      className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-xs"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-        </div>       
-
 
         </form>
       </div>

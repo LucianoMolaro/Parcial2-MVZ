@@ -15,7 +15,8 @@ export interface ProductoCategoriaCreate{
 }
 
 export interface ProductoIngredienteCreate{
-  ingrediente_id: number | null
+  ingrediente_id: number
   es_removible: boolean 
-  cantidad: number | null
+  cantidad: number 
+  unidad_medida_id: number
 }

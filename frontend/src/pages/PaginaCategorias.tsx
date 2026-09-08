@@ -47,6 +47,8 @@ export default function PaginaCategorias() {
     setCategoriaEditar(null);
     setParentIdPreset(null)
     cargarCategoriasPrincipales();
+    setCategoriasAMostrar([])
+    setHistorialNav([])
   };
 
   const eliminar = async (cat: CategoriaRead) => {
@@ -131,6 +133,21 @@ export default function PaginaCategorias() {
           {/* --- GRID DE ELEMENTOS (Formato horizontal estirado y sutil) --- */}
           <div className="space-y-2.5 transition-all duration-100 ease-in-out antialiased">
               <div className="animate-in fade-in duration-500 space-y-3">
+                {categoriasPrincipales.length === 0 && (
+                  <div className="flex w-full justify-center py-6">
+                    <span className="text-xs font-medium text-gray-400">
+                      Aun no se han creado categorias...
+                    </span>
+                  </div>
+                )}
+
+                {hayHistorial && categoriasPrincipales.length > 0 && categoriasAMostrar.length === 0 && (
+                  <div className="flex w-full justify-center py-6">
+                    <span className="text-xs font-medium text-gray-400">
+                      Aun no se han creado subcategorias...
+                    </span>
+                  </div>
+                )}
                 {categoriasAMostrar.map((cat) => {
                 return (
                   <div
@@ -211,18 +228,6 @@ export default function PaginaCategorias() {
                 }
 
               </div>
-
-              {hayHistorial && (
-                <div className="flex w-full justify-center">
-                  <span>Aun no se han creado subcategorias...</span>
-                </div>)
-              }
-
-              {categoriasPrincipales.length == 0 && (
-                <div className="flex w-full justify-center">
-                  <span>Aun no se han creado categorias...</span>
-                </div>)
-              }
           </div> 
 
         </div>

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { IngredienteRead } from '../models/Ingrediente';
 import { UnidadMedidaRead } from '../models/UnidadMedida';
+import { BsXLg } from 'react-icons/bs';
 
 interface ModalProps {
   isOpen: boolean;
@@ -147,42 +148,70 @@ export default function ModalNuevoIngrediente({ isOpen , onClose, ingrediente }:
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-xs" onClick={onClose} />
 
-      <div className="relative w-full max-w-sm bg-white rounded-2xl border border-gray-100 shadow-xl p-5 space-y-4 z-10 font-sans antialiased">
+      <div className="relative z-10 w-full max-w-sm space-y-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-xl font-sans antialiased">
         <div className="flex items-start justify-between border-b border-gray-50 pb-2">
-          <div>
-            <h2 className="text-base font-black text-[#1E1E24] tracking-tight">
-              {original ? 'Editar' : 'Nuevo'} <span className="text-[#E63946]">Ingrediente</span>
-            </h2>
-          </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-[#E63946] font-black text-sm p-1 cursor-pointer">✕</button>
+          <h2 className="text-base font-black tracking-tight text-[#1E1E24]">
+            {original ? "Editar" : "Nuevo"} <span className="text-[#E63946]">Ingrediente</span>
+          </h2>
+          <button
+            onClick={onClose}
+            aria-label="Cerrar"
+            className="cursor-pointer p-1 text-sm font-black text-gray-400 transition-colors hover:text-[#E63946]"
+          >
+            <BsXLg />
+          </button>
         </div>
 
         <form onSubmit={manejarEnvio} className="space-y-3.5">
-          <div className="space-y-1">
-            <label htmlFor="nombre" className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Nombre del Ingrediente</label>
-            <input
-              id="nombre"
-              type="text"
-              required
-              value={formulario.nombre}
-              onChange={(e) => setFormulario({...formulario, nombre: e.target.value})}
-              placeholder="Ej: Queso Cheddar, Crema de Leche"
-              className="w-full px-2.5 py-1.5 text-xs bg-[#FAFAFA] border border-gray-100 rounded-xl text-[#1E1E24] placeholder-gray-400 focus:outline-none focus:border-[#FFB703] transition-colors font-medium"
-            />
+
+          {/* Nombre + Precio */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-2 space-y-1">
+              <label htmlFor="nombre" className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                Nombre del Ingrediente
+              </label>
+              <input
+                id="nombre"
+                type="text"
+                required
+                value={formulario.nombre}
+                onChange={(e) => setFormulario({ ...formulario, nombre: e.target.value })}
+                placeholder="Ej: Queso Cheddar, Crema de Leche"
+                className="w-full rounded-xl border border-gray-100 bg-[#FAFAFA] px-2.5 py-1.5 text-xs font-medium text-[#1E1E24] placeholder-gray-400 transition-colors focus:outline-none focus:border-[#FFB703]"
+              />
+            </div>
+            <div className="space-y-1">
+              <label htmlFor="precio" className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                Precio ($)
+              </label>
+              <input
+                id="precio"
+                type="number"
+                step="0.1"
+                required
+                value={formulario.precio}
+                onChange={(e) => setFormulario({ ...formulario, precio: Number(e.target.value) })}
+                placeholder="0.00"
+                className="w-full rounded-xl border border-gray-100 bg-[#FAFAFA] px-2.5 py-1.5 text-xs font-medium text-[#1E1E24] placeholder-gray-400 transition-colors focus:outline-none focus:border-[#FFB703]"
+              />
+            </div>
           </div>
 
+          {/* Medición + Unidad */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label htmlFor="tipoMedicion" className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Medición</label>
+              <label htmlFor="tipoMedicion" className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                Medición
+              </label>
               <select
                 id="tipoMedicion"
                 required
                 value={unidadesTipo}
                 onChange={(e) => {
-                  setFormulario({...formulario,unidad_medida_id: -1}), 
-                  setUnidadesTipo(e.target.value)}
-                }
-                className="w-full px-2.5 py-1.5 text-xs bg-[#FAFAFA] border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none focus:border-[#FFB703] transition-colors font-medium cursor-pointer disabled:bg-gray-50 disabled:text-gray-400"
+                  setFormulario({ ...formulario, unidad_medida_id: -1 }),
+                    setUnidadesTipo(e.target.value);
+                }}
+                className="w-full cursor-pointer rounded-xl border border-gray-100 bg-[#FAFAFA] px-2.5 py-1.5 text-xs font-medium text-[#1E1E24] transition-colors focus:outline-none focus:border-[#FFB703] disabled:bg-gray-50 disabled:text-gray-400"
               >
                 <option value="" disabled hidden>Selecciona...</option>
                 {Array.from(new Set(unidades.map((um) => um.tipo))).map((tipo) => (
@@ -192,71 +221,72 @@ export default function ModalNuevoIngrediente({ isOpen , onClose, ingrediente }:
             </div>
 
             <div className="space-y-1">
-              <label htmlFor="unidad" className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Unidad</label>
+              <label htmlFor="unidad" className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                Unidad
+              </label>
               <select
                 id="unidad"
                 required
                 value={formulario.unidad_medida_id}
-                onChange={(e) => setFormulario({...formulario, unidad_medida_id: Number(e.target.value)})}
+                onChange={(e) => setFormulario({ ...formulario, unidad_medida_id: Number(e.target.value) })}
                 disabled={!unidadesTipo}
-                className="w-full px-2.5 py-1.5 text-xs bg-[#FAFAFA] border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none focus:border-[#FFB703] transition-colors font-medium cursor-pointer disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
+                className="w-full cursor-pointer rounded-xl border border-gray-100 bg-[#FAFAFA] px-2.5 py-1.5 text-xs font-medium text-[#1E1E24] transition-colors focus:outline-none focus:border-[#FFB703] disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"
               >
                 <option value={-1} disabled hidden>Selecciona...</option>
-                {(unidades.filter((uni) => uni.tipo === unidadesTipo)).map((uni) => (
+                {unidades.filter((uni) => uni.tipo === unidadesTipo).map((uni) => (
                   <option key={uni.id} value={uni.id}>{uni.nombre}</option>
                 ))}
               </select>
             </div>
           </div>
 
+          {/* Stock */}
           <div className="space-y-1">
-            <label htmlFor="stock" className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Cantidad Inicial en Stock</label>
+            <label htmlFor="stock" className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">
+              Cantidad Inicial en Stock
+            </label>
             <input
               id="stock"
               type="number"
               step="0.01"
               required
               value={formulario.stock_cantidad}
-              onChange={(e) => setFormulario({...formulario, stock_cantidad: Number(e.target.value)})}
+              onChange={(e) => setFormulario({ ...formulario, stock_cantidad: Number(e.target.value) })}
               placeholder="0.00"
-              className="w-full px-2.5 py-1.5 text-xs bg-[#FAFAFA] border border-gray-100 rounded-xl text-[#1E1E24] focus:outline-none focus:border-[#FFB703] font-medium"
+              className="w-full rounded-xl border border-gray-100 bg-[#FAFAFA] px-2.5 py-1.5 text-xs font-medium text-[#1E1E24] focus:outline-none focus:border-[#FFB703]"
             />
           </div>
 
-          <div className="flex items-center space-x-2 pt-0.5 select-none">
-            <label className="relative flex items-center cursor-pointer">
-              <input type="checkbox" checked={formulario.es_alergeno} onChange={(e) => setFormulario({...formulario, es_alergeno: e.target.checked})} className="sr-only peer" />
-              <div className="w-7 h-4 bg-gray-200 rounded-full peer peer-focus:outline-none peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-500"></div>
+          {/* Es alergeno */}
+          <div className="flex select-none items-center space-x-2 pt-0.5">
+            <label className="relative flex cursor-pointer items-center">
+              <input
+                type="checkbox"
+                checked={formulario.es_alergeno}
+                onChange={(e) => setFormulario({ ...formulario, es_alergeno: e.target.checked })}
+                className="peer sr-only"
+              />
+              <div className="peer h-4 w-7 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-3 after:w-3 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-[#FFB703] peer-checked:after:translate-x-full peer-focus:outline-none"></div>
             </label>
             <span className="text-[11px] font-bold text-[#1E1E24]">Es alergeno?</span>
           </div>
 
-          <div className="pt-2 flex items-center space-x-2">
+          {/* Botones de Acción */}
+          <div className="flex items-center space-x-2 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="w-1/3 bg-gray-50 hover:bg-gray-100 text-[#1E1E24] border border-gray-100 font-bold text-xs py-2 rounded-xl transition-all cursor-pointer text-center"
+              className="w-1/3 cursor-pointer rounded-xl border border-gray-100 bg-gray-50 py-2 text-center text-xs font-bold text-[#1E1E24] transition-all hover:bg-gray-100"
             >
               Cancelar
             </button>
 
-            {!!original ? (
-              <>
-                <button
-                  type="submit"
-                  className="w-2/3 bg-[#E63946] hover:bg-opacity-95 text-white font-extrabold text-xs py-2 rounded-xl tracking-wider uppercase transition-all shadow-md active:scale-98 focus:outline-none cursor-pointer text-center"
-                >
-                  Guardar
-                </button>
-              </>
-            ) : (
-              <button
-                type="submit"
-                className="w-2/3 bg-[#E63946] hover:bg-opacity-95 text-white font-extrabold text-xs py-2 rounded-xl tracking-wider uppercase transition-all shadow-md active:scale-98 focus:outline-none cursor-pointer text-center"
-              >
-                Crear
-              </button>
-            )}
+            <button
+              type="submit"
+              className="w-2/3 cursor-pointer rounded-xl bg-[#E63946] py-2 text-center text-xs font-extrabold uppercase tracking-wider text-white shadow-xs transition-all hover:bg-opacity-95 focus:outline-none active:scale-98"
+            >
+              {original ? "Guardar" : "Crear"}
+            </button>
           </div>
         </form>
       </div>

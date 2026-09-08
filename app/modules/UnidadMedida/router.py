@@ -13,3 +13,12 @@ def obtener_todas(
     _=Depends(require_role("ADMIN")),
 ):
     return uow.unidades_medida.get_all()
+
+
+@router.get("/xtipo/{tipo}", response_model=list[UnidadMedidaSchema])
+def obtener_xtipo(
+    tipo: str,
+    uow: UnitOfWork = Depends(get_uow),
+    _=Depends(require_role("ADMIN")),
+):
+    return uow.unidades_medida.get_xtipo(tipo)
