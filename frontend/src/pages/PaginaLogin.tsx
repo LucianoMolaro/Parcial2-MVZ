@@ -9,10 +9,14 @@ export default function PaginaLogin() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-  const manejarIngreso = (e: React.FormEvent) => {
+  const manejarIngreso = async (e: React.FormEvent) => {
     e.preventDefault();
-    login(username, password)
-    navigate("/")
+    try {
+      await login(username, password);
+      navigate("/");
+    } catch {
+      alert("Usuario o contraseña incorrectos.");
+    }
   };
 
   const irARegistro = () => {

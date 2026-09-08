@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
 import BarraNavegacion from '../components/Navbar';
 import { BsPlus } from 'react-icons/bs';
+import { mostrarErrorSiFalla } from '../utils/apiError';
 
 interface Direccion {
   id: number;
@@ -61,18 +62,22 @@ export default function PaginaDirecciones() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form),
     });
-    if (res.ok) { setMostrarForm(false); cargarDirecciones(); }
+    if (await mostrarErrorSiFalla(res, 'No se pudo guardar la dirección.')) return;
+    setMostrarForm(false);
+    cargarDirecciones();
   };
 
   const eliminar = async (id: number) => {
     if (!confirm('¿Eliminar esta dirección?')) return;
     const res = await fetch(`http://localhost:8000/direcciones/${id}`, { method: 'DELETE', credentials: 'include' });
-    if (res.ok) cargarDirecciones();
+    if (await mostrarErrorSiFalla(res, 'No se pudo eliminar la dirección.')) return;
+    cargarDirecciones();
   };
 
   const marcarPrincipal = async (id: number) => {
     const res = await fetch(`http://localhost:8000/direcciones/${id}/principal`, { method: 'PATCH', credentials: 'include' });
-    if (res.ok) cargarDirecciones();
+    if (await mostrarErrorSiFalla(res, 'No se pudo marcar la dirección como principal.')) return;
+    cargarDirecciones();
   };
 
   const moverPaginacion = (dir: 'izquierda' | 'derecha') => {

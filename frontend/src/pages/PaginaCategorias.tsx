@@ -3,6 +3,7 @@ import BarraNavegacion from '../components/Navbar';
 import {  BsBoxArrowInRight, BsChevronRight, BsPencilSquare, BsPlus, BsPlusSquare, BsTrash } from 'react-icons/bs';
 import FormularioCategoria from '../components/FormularioCategoria';
 import { CategoriaRead } from '../models/Categoria';
+import { mostrarErrorSiFalla } from '../utils/apiError';
 
 
 
@@ -57,7 +58,8 @@ export default function PaginaCategorias() {
       method: 'DELETE',
       credentials: 'include',
     });
-    if (res.ok) cargarCategoriasPrincipales();
+    if (await mostrarErrorSiFalla(res, 'No se pudo eliminar la categoría.')) return;
+    cargarCategoriasPrincipales();
   };
 
   const entrarSub = (c: CategoriaRead) => {

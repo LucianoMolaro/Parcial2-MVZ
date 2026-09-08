@@ -4,6 +4,7 @@ import { BsBan, BsPencilSquare, BsTrash } from 'react-icons/bs';
 import FormularioIngrediente from '../components/FormularioIngrediente';
 import { IngredienteRead } from '../models/Ingrediente';
 import ModalNuevoIngrediente from '../components/FormularioIngrediente';
+import { mostrarErrorSiFalla } from '../utils/apiError';
 
 export default function PaginaIngredientesAdmin() {
   const [ingredientes, setIngredientes] = useState<IngredienteRead[]>([]);
@@ -149,7 +150,8 @@ export default function PaginaIngredientesAdmin() {
                           method: 'DELETE',
                           credentials: 'include',
                         });
-                        if (res.ok) cargarIngredientes();
+                        if (await mostrarErrorSiFalla(res, 'No se pudo eliminar el ingrediente.')) return;
+                        cargarIngredientes();
                       }}
                       title="Desactivar del inventario"
                       className="bg-gray-50 hover:bg-[#E63946] border border-gray-100/70 text-gray-400 hover:text-white p-1.5 rounded-lg transition-all duration-300 active:scale-95 cursor-pointer focus:outline-none flex items-center justify-center"

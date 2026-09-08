@@ -74,7 +74,15 @@ export default function PaginaCarrito() {
       body: JSON.stringify(body),
     }).catch(() => null);
     setCargando(false);
-    if (!res || !res.ok) return;
+    if (!res) {
+      alert('No se pudo conectar con el servidor. Intenta nuevamente.');
+      return;
+    }
+    if (!res.ok) {
+      const error = await res.json().catch(() => null);
+      alert(error?.detail || 'Ocurrió un error al procesar tu pedido.');
+      return;
+    }
     const pedido = await res.json();
     resetear();
     if (formaPago === 'MERCADOPAGO' && pedido.init_point) {

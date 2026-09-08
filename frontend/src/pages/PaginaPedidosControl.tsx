@@ -5,6 +5,7 @@ import { BsCalendarDate, BsClock, BsDot } from 'react-icons/bs';
 import { useAuthUser } from '../context/AuthContext';
 import { Pedido } from '../models/Pedido';
 import { useWebSocket } from '../context/WebSocketContext';
+import { mostrarErrorSiFalla } from '../utils/apiError';
 
 const ESTADO_LABEL: Record<string, string> = {
   PENDIENTE: 'Confirmado',
@@ -48,22 +49,26 @@ export default function PaginaPedidosAdmin() {
     const avanzarEstado = async (pedidoId: number, estadoCodigo: string) => {
       const siguiente = SIGUIENTE[estadoCodigo];
       if (!siguiente) return;
-      await fetch(`http://localhost:8000/pedidos/${pedidoId}/estado`, {
+      const res = await fetch(`http://localhost:8000/pedidos/${pedidoId}/estado`, {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ estado_pedido_codigo: siguiente }),
       });
+      if (await mostrarErrorSiFalla(res, 'No se pudo avanzar el estado del pedido.')) return;
+      cargarPedidos();
     };
 
     const cancelarPedido = async (pedidoId: number) => {
       if (!confirm('¿Cancelar este pedido?')) return;
-      await fetch(`http://localhost:8000/pedidos/${pedidoId}/estado`, {
+      const res = await fetch(`http://localhost:8000/pedidos/${pedidoId}/estado`, {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ estado_pedido_codigo: 'CANCELADO' }),
       });
+      if (await mostrarErrorSiFalla(res, 'No se pudo cancelar el pedido.')) return;
+      cargarPedidos();
     };
 
   const obtenerEstilosEstado = (estado: string) => {

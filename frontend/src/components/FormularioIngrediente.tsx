@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { IngredienteRead } from '../models/Ingrediente';
 import { UnidadMedidaRead } from '../models/UnidadMedida';
 import { BsXLg } from 'react-icons/bs';
+import { mostrarErrorSiFalla } from '../utils/apiError';
 
 interface ModalProps {
   isOpen: boolean;
@@ -76,7 +77,7 @@ export default function ModalNuevoIngrediente({ isOpen , onClose, ingrediente }:
     e.preventDefault();
 
     if(!!original){
-      if( 
+      if(
         original &&
         original.nombre === formulario.nombre &&
         original.precio === formulario.precio &&
@@ -95,7 +96,7 @@ export default function ModalNuevoIngrediente({ isOpen , onClose, ingrediente }:
           },
           body: JSON.stringify(formulario)
         })
-        if(!res.ok) throw new Error("No se pudo actualizar el ingrediente")
+        if (await mostrarErrorSiFalla(res, 'No se pudo actualizar el ingrediente.')) return;
       }
     }else{
       const res = await fetch(`http://localhost:8000/ingredientes/crear`, {
@@ -106,12 +107,8 @@ export default function ModalNuevoIngrediente({ isOpen , onClose, ingrediente }:
           },
           body: JSON.stringify(formulario)
         })
-        
-        // if(!res.ok) throw new Error("No se pudo crear el ingrediente")
-      const data = await res.json();
 
-      console.log("STATUS:", res.status);
-      console.log("DATA:", data);    
+      if (await mostrarErrorSiFalla(res, 'No se pudo crear el ingrediente.')) return;
     }
 
     onClose()

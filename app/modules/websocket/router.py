@@ -11,7 +11,7 @@ router = APIRouter(prefix="/ws")
 
 @router.websocket("/conectar")
 async def websocket_endpoint(websocket: WebSocket):
-    client_id = uuid.uuid4()
+    client_id = str(uuid.uuid4())
     await ws_manager.connect(websocket, client_id)
     print("WS conectado")
     try:

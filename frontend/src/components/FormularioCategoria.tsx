@@ -2,6 +2,7 @@ import React, { Fragment, JSXElementConstructor, ReactDOM, ReactElement, ReactEv
 import { CategoriaCreate, CategoriaRead } from '../models/Categoria';
 import { cloudinary } from '../models/Cloudinary';
 import { BsChevronRight, BsXLg, BsXSquare } from 'react-icons/bs';
+import { mostrarErrorSiFalla } from '../utils/apiError';
 
 interface ModalProps {
   isOpen: boolean
@@ -136,6 +137,14 @@ export default function FormularioCategoria({ isOpen, onClose, categoriaEditar, 
 const manejarEnvio = async (e: React.FormEvent) => {
   e.preventDefault();
 
+  try {
+    await manejarEnvioInterno();
+  } catch (err) {
+    alert(err instanceof Error ? err.message : 'Ocurrió un error al guardar la categoría.');
+  }
+};
+
+const manejarEnvioInterno = async () => {
   let imagenSubida = cloudinary;
 
   if (imagen) {
@@ -179,9 +188,8 @@ const manejarEnvio = async (e: React.FormEvent) => {
       }
     );
 
-    if (res.ok) {
-      limpiarFormulario();
-    }
+    if (await mostrarErrorSiFalla(res, 'No se pudo guardar la categoría.')) return;
+    limpiarFormulario();
 
   } else {
 
@@ -197,9 +205,8 @@ const manejarEnvio = async (e: React.FormEvent) => {
       }
     );
 
-    if (res.ok) {
-      limpiarFormulario();
-    }
+    if (await mostrarErrorSiFalla(res, 'No se pudo crear la categoría.')) return;
+    limpiarFormulario();
   }
 };
   if (!isOpen) return null;

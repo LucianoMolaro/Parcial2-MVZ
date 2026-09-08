@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import BarraNavegacion from '../components/Navbar';
 import { BsEnvelope, BsPersonCheck, BsPersonX, BsSearch, BsTelephone } from 'react-icons/bs';
+import { mostrarErrorSiFalla } from '../utils/apiError';
 
 interface UsuarioPrivate {
   id: number;
@@ -33,7 +34,8 @@ export default function PaginaUsuariosAdmin() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ habilitado: !estadoActual }),
     });
-    if (res.ok) cargarUsuarios();
+    if (await mostrarErrorSiFalla(res, 'No se pudo actualizar el estado del usuario.')) return;
+    cargarUsuarios();
   };
 
   const usuariosFiltrados = usuarios.filter(user => {
